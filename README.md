@@ -29,6 +29,10 @@ Build only (this is helpful on its own to fix compilation issues):
 bevy build
 ```
 
+### Even faster feedback for testing?
+Apparently this [tool](https://github.com/TheBevyFlock/bevy_simple_subsecond_system) hotpatches functions to test on the
+spot, but I haven't looked into it yet.
+
 ### Testing
 We don't test here. But if it would be easier to work on a feature with tests, see `cargo test`.
 
