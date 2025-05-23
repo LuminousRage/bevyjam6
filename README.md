@@ -12,6 +12,7 @@ cp .cargo/config_fast_builds.toml .cargo/config.toml
 
 ### Bevy CLI
 I recommend installing [bevy_cli](https://github.com/TheBevyFlock/bevy_cli), some of the scripts look pretty handy.
+Louis will probably make a VSCode Task Runner thing so he has buttons to click eventually.
 
 Building & running for the web:
 ```
