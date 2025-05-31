@@ -1,5 +1,8 @@
-## Bevy Jam #6
-Our submission for [Bevy Jam #6](https://itch.io/jam/bevy-jam-6).
+# Bevyjam6
+
+This project was generated using the [Bevy New 2D](https://github.com/TheBevyFlock/bevy_new_2d) template.
+Check out the [documentation](https://github.com/TheBevyFlock/bevy_new_2d/blob/main/README.md) to get started!
+
 
 ## Development
 This assumes you have Rust, Cargo etc. setup already. If you haven't done so, visit the [Rust website](https://www.rust-lang.org/tools/install).
