@@ -5,6 +5,7 @@
 
 mod asset_tracking;
 mod audio;
+mod deck;
 mod demo;
 #[cfg(feature = "dev")]
 mod dev_tools;
@@ -54,6 +55,8 @@ impl Plugin for AppPlugin {
             // menus::plugin,
             screens::plugin,
             theme::plugin,
+            player::plugin,
+            deck::plugin,
         ));
 
         // Order new `AppSystems` variants by adding them here:
