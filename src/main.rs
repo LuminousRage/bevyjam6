@@ -9,6 +9,7 @@ mod demo;
 #[cfg(feature = "dev")]
 mod dev_tools;
 mod menus;
+mod player;
 mod screens;
 mod theme;
 
