@@ -50,7 +50,7 @@ impl Plugin for AppPlugin {
             demo::plugin,
             #[cfg(feature = "dev")]
             dev_tools::plugin,
-            menus::plugin,
+            // menus::plugin,
             screens::plugin,
             theme::plugin,
         ));
