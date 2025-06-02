@@ -8,7 +8,7 @@ use crate::{
 
 pub(super) fn plugin(app: &mut App) {
     // Entry point of the game. Add the system you are testing currently to swap it out.
-    app.add_systems(OnEnter(Screen::Gameplay), spawn_card);
+    app.add_systems(OnEnter(Screen::Gameplay), spawn_level);
 
     // Toggle pause on key press.
     app.add_systems(
