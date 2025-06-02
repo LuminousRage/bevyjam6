@@ -54,7 +54,6 @@ impl Plugin for AppPlugin {
             screens::plugin,
             theme::plugin,
             player::plugin,
-            deck::plugin,
         ));
 
         // Order new `AppSystems` variants by adding them here:
