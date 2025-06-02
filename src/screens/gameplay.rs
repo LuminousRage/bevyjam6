@@ -2,9 +2,7 @@
 
 use bevy::{input::common_conditions::input_just_pressed, prelude::*, ui::Val::*};
 
-use crate::{
-    Pause, deck::card::spawn_card, demo::level::spawn_level, menus::Menu, screens::Screen,
-};
+use crate::{Pause, demo::level::spawn_level, menus::Menu, screens::Screen};
 
 pub(super) fn plugin(app: &mut App) {
     // Entry point of the game. Add the system you are testing currently to swap it out.
