@@ -15,7 +15,6 @@ mod screens;
 mod theme;
 
 use bevy::{asset::AssetMetaCheck, prelude::*};
-use player::spawn_player;
 
 fn main() -> AppExit {
     App::new().add_plugins(AppPlugin).run()
@@ -76,7 +75,7 @@ impl Plugin for AppPlugin {
         app.configure_sets(Update, PausableSystems.run_if(in_state(Pause(false))));
 
         // Spawn the main camera.
-        app.add_systems(Startup, (spawn_camera, spawn_player));
+        app.add_systems(Startup, (spawn_camera));
     }
 }
 

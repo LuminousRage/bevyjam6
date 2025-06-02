@@ -2,11 +2,11 @@
 
 use bevy::{input::common_conditions::input_just_pressed, prelude::*, ui::Val::*};
 
-use crate::{Pause, deck::card::spawn_card, menus::Menu, screens::Screen};
+use crate::{Pause, deck::card::spawn_card, menus::Menu, player::spawn_player, screens::Screen};
 
 pub(super) fn plugin(app: &mut App) {
     // Entry point of the game. Add the system you are testing currently to swap it out.
-    app.add_systems(OnEnter(Screen::Gameplay), spawn_card);
+    app.add_systems(OnEnter(Screen::Gameplay), spawn_player);
 
     // Toggle pause on key press.
     app.add_systems(
