@@ -17,7 +17,7 @@ use bevy::{prelude::*, window::PrimaryWindow};
 
 use crate::{AppSystems, PausableSystems};
 
-pub(super) fn plugin(app: &mut App) {
+pub fn plugin(app: &mut App) {
     app.register_type::<MovementController>();
     app.register_type::<ScreenWrap>();
 
@@ -54,7 +54,11 @@ impl Default for MovementController {
     }
 }
 
-fn apply_movement(
+#[derive(Component, Reflect)]
+#[reflect(Component)]
+pub struct ScreenWrap;
+
+pub(super) fn apply_movement(
     time: Res<Time>,
     mut movement_query: Query<(&MovementController, &mut Transform)>,
 ) {
@@ -64,11 +68,7 @@ fn apply_movement(
     }
 }
 
-#[derive(Component, Reflect)]
-#[reflect(Component)]
-pub struct ScreenWrap;
-
-fn apply_screen_wrap(
+pub(super) fn apply_screen_wrap(
     window: Single<&Window, With<PrimaryWindow>>,
     mut wrap_query: Query<&mut Transform, With<ScreenWrap>>,
 ) {

@@ -114,7 +114,7 @@ impl FromWorld for CardAssets {
 
 pub fn spawn_card(mut commands: Commands, card_assets: Res<CardAssets>) {
     commands.spawn((
-        Name::new("Level"),
+        Name::new("Card"),
         Transform::default(),
         Visibility::default(),
         StateScoped(Screen::Gameplay),

@@ -5,8 +5,8 @@
 
 mod asset_tracking;
 mod audio;
+mod components;
 mod deck;
-mod demo;
 #[cfg(feature = "dev")]
 mod dev_tools;
 mod menus;
@@ -15,6 +15,7 @@ mod screens;
 mod theme;
 
 use bevy::{asset::AssetMetaCheck, prelude::*};
+use player::spawn_player;
 
 fn main() -> AppExit {
     App::new().add_plugins(AppPlugin).run()
@@ -49,13 +50,13 @@ impl Plugin for AppPlugin {
         app.add_plugins((
             asset_tracking::plugin,
             audio::plugin,
-            demo::plugin,
             #[cfg(feature = "dev")]
             dev_tools::plugin,
+            components::movement_plugin,
             // menus::plugin,
+            player::plugin,
             screens::plugin,
             theme::plugin,
-            player::plugin,
             deck::plugin,
         ));
 
@@ -75,7 +76,7 @@ impl Plugin for AppPlugin {
         app.configure_sets(Update, PausableSystems.run_if(in_state(Pause(false))));
 
         // Spawn the main camera.
-        app.add_systems(Startup, spawn_camera);
+        app.add_systems(Startup, (spawn_camera, spawn_player));
     }
 }
 
