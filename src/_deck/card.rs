@@ -1,5 +1,4 @@
 //! This file is all about rendering the card
-//! For card definition, see `card_library.rs`
 
 use bevy::{color::palettes::css::BLACK, prelude::*, text::TextBounds};
 
@@ -8,17 +7,6 @@ use crate::{asset_tracking::LoadResource, screens::Screen};
 pub(super) fn plugin(app: &mut App) {
     app.register_type::<CardAssets>();
     app.load_resource::<CardAssets>();
-}
-
-enum CardCategory {
-    Idk,
-}
-struct Card {
-    name: &'static str,
-    description: &'static str,
-    image: Handle<Image>,
-    // category: CardCategory,
-    insanity: u32,
 }
 
 pub fn card(card_assets: &CardAssets) -> impl Bundle {

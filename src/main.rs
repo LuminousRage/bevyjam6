@@ -5,7 +5,6 @@
 
 mod asset_tracking;
 mod audio;
-mod deck;
 mod demo;
 #[cfg(feature = "dev")]
 mod dev_tools;
@@ -49,7 +48,6 @@ impl Plugin for AppPlugin {
         app.add_plugins((
             asset_tracking::plugin,
             audio::plugin,
-            demo::plugin,
             #[cfg(feature = "dev")]
             dev_tools::plugin,
             // menus::plugin,
