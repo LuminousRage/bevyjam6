@@ -37,12 +37,7 @@ pub fn player(player_assets: &PlayerAssets) -> impl Bundle {
             image: player_assets.player.clone(),
             ..default()
         },
-        CharacterControllerBundle::new(Collider::capsule(12.5, 20.0)).with_movement(
-            MOVEMENT_ACCELERATION,
-            0.92,
-            JUMP_IMPULSE,
-            (30.0 as Scalar).to_radians(),
-        ),
+        CharacterControllerBundle::new(Collider::capsule(12.5, 20.0)),
         Friction::ZERO.with_combine_rule(CoefficientCombine::Min),
         Restitution::ZERO.with_combine_rule(CoefficientCombine::Min),
         ColliderDensity(2.0),

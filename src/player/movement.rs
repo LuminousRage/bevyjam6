@@ -5,7 +5,9 @@
 use avian2d::{math::*, prelude::*};
 use bevy::prelude::*;
 
-use super::configs::DASH_SPEED_MODIFIER;
+use super::configs::{
+    DASH_SPEED_MODIFIER, JUMP_IMPULSE, MAX_SLOPE_ANGLE, MOVEMENT_ACCELERATION, MOVEMENT_DAMPING,
+};
 
 pub(super) fn plugin(app: &mut App) {
     app.add_event::<MovementAction>().add_systems(
@@ -18,6 +20,7 @@ pub(super) fn plugin(app: &mut App) {
             apply_movement_damping,
         ),
     );
+    app.register_type::<JumpImpulse>();
 }
 
 /// An event sent for a movement input action.
@@ -25,7 +28,7 @@ pub(super) fn plugin(app: &mut App) {
 pub enum MovementAction {
     Move(Scalar),
     Jump,
-    Dash(Scalar),
+    Dash,
 }
 
 /// A marker component indicating that an entity is using a character controller.
@@ -36,23 +39,33 @@ pub struct CharacterController;
 #[derive(Component)]
 // #[component(storage = "SparseSet")]
 pub struct Grounded;
+
 /// The acceleration used for character movement.
 #[derive(Component, Reflect)]
+#[reflect(Component)]
 pub struct MovementAcceleration(Scalar);
 
 /// The damping factor used for slowing down movement.
 #[derive(Component, Reflect)]
+#[reflect(Component)]
 pub struct MovementDampingFactor(Scalar);
 
 /// The strength of a jump.
 #[derive(Component, Reflect)]
+#[reflect(Component)]
 pub struct JumpImpulse(Scalar);
 
 /// The maximum angle a slope can have for a character controller
 /// to be able to climb and jump. If the slope is steeper than this angle,
 /// the character will slide down.
 #[derive(Component, Reflect)]
+#[reflect(Component)]
 pub struct MaxSlopeAngle(Scalar);
+
+/// The direction the player is facing.
+#[derive(Component, Reflect)]
+#[reflect(Component)]
+pub struct PlayerFaceDirection(Scalar);
 
 /// A bundle that contains the components needed for a basic
 /// kinematic character controller.
@@ -73,6 +86,7 @@ pub struct MovementBundle {
     damping: MovementDampingFactor,
     jump_impulse: JumpImpulse,
     max_slope_angle: MaxSlopeAngle,
+    player_face_direction: PlayerFaceDirection,
 }
 
 impl MovementBundle {
@@ -87,13 +101,8 @@ impl MovementBundle {
             damping: MovementDampingFactor(damping),
             jump_impulse: JumpImpulse(jump_impulse),
             max_slope_angle: MaxSlopeAngle(max_slope_angle),
+            player_face_direction: PlayerFaceDirection(1.0),
         }
-    }
-}
-
-impl Default for MovementBundle {
-    fn default() -> Self {
-        Self::new(30.0, 0.9, 7.0, PI * 0.45)
     }
 }
 
@@ -110,19 +119,13 @@ impl CharacterControllerBundle {
             ground_caster: ShapeCaster::new(caster_shape, Vector::ZERO, 0.0, Dir2::NEG_Y)
                 .with_max_distance(10.0),
             locked_axes: LockedAxes::ROTATION_LOCKED,
-            movement: MovementBundle::default(),
+            movement: MovementBundle::new(
+                MOVEMENT_ACCELERATION,
+                MOVEMENT_DAMPING,
+                JUMP_IMPULSE,
+                MAX_SLOPE_ANGLE,
+            ),
         }
-    }
-
-    pub fn with_movement(
-        mut self,
-        acceleration: Scalar,
-        damping: Scalar,
-        jump_impulse: Scalar,
-        max_slope_angle: Scalar,
-    ) -> Self {
-        self.movement = MovementBundle::new(acceleration, damping, jump_impulse, max_slope_angle);
-        self
     }
 }
 
@@ -146,7 +149,7 @@ fn keyboard_input(
     }
 
     if keyboard_input.just_pressed(KeyCode::KeyC) {
-        movement_event_writer.write(MovementAction::Dash(direction));
+        movement_event_writer.write(MovementAction::Dash);
     }
 }
 
@@ -200,6 +203,7 @@ fn movement(
     mut controllers: Query<(
         &MovementAcceleration,
         &JumpImpulse,
+        &mut PlayerFaceDirection,
         &mut LinearVelocity,
         Has<Grounded>,
     )>,
@@ -209,11 +213,17 @@ fn movement(
     let delta_time = time.delta_secs_f64().adjust_precision();
 
     for event in movement_event_reader.read() {
-        for (movement_acceleration, jump_impulse, mut linear_velocity, is_grounded) in
-            &mut controllers
+        for (
+            movement_acceleration,
+            jump_impulse,
+            mut player_direction,
+            mut linear_velocity,
+            is_grounded,
+        ) in &mut controllers
         {
             match event {
                 MovementAction::Move(direction) => {
+                    player_direction.0 = *direction;
                     linear_velocity.x += *direction * movement_acceleration.0 * delta_time;
                 }
                 MovementAction::Jump => {
@@ -221,10 +231,11 @@ fn movement(
                         linear_velocity.y = jump_impulse.0;
                     }
                 }
-                MovementAction::Dash(direction) => {
-                    // Dash is a quick burst of movement in the X direction
-                    linear_velocity.x +=
-                        *direction * movement_acceleration.0 * DASH_SPEED_MODIFIER * delta_time;
+                MovementAction::Dash => {
+                    linear_velocity.x += player_direction.0
+                        * movement_acceleration.0
+                        * DASH_SPEED_MODIFIER
+                        * delta_time;
                 }
             }
         }
