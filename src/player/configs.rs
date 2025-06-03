@@ -1,0 +1,3 @@
+pub const MOVEMENT_ACCELERATION: f32 = 1250.0;
+pub const DASH_SPEED_MODIFIER: f32 = 50.0;
+pub const JUMP_IMPULSE: f32 = 400.0;

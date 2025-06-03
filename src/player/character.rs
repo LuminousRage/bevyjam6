@@ -3,7 +3,10 @@ use bevy::prelude::*;
 
 use crate::asset_tracking::LoadResource;
 
-use super::movement::CharacterControllerBundle;
+use super::{
+    configs::{JUMP_IMPULSE, MOVEMENT_ACCELERATION},
+    movement::CharacterControllerBundle,
+};
 
 pub(super) fn plugin(app: &mut App) {
     app.register_type::<PlayerAssets>();
@@ -35,9 +38,9 @@ pub fn player(player_assets: &PlayerAssets) -> impl Bundle {
             ..default()
         },
         CharacterControllerBundle::new(Collider::capsule(12.5, 20.0)).with_movement(
-            1250.0,
+            MOVEMENT_ACCELERATION,
             0.92,
-            400.0,
+            JUMP_IMPULSE,
             (30.0 as Scalar).to_radians(),
         ),
         Friction::ZERO.with_combine_rule(CoefficientCombine::Min),

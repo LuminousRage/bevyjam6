@@ -5,6 +5,8 @@
 use avian2d::{math::*, prelude::*};
 use bevy::prelude::*;
 
+use super::configs::DASH_SPEED_MODIFIER;
+
 pub(super) fn plugin(app: &mut App) {
     app.add_event::<MovementAction>().add_systems(
         Update,
@@ -23,6 +25,7 @@ pub(super) fn plugin(app: &mut App) {
 pub enum MovementAction {
     Move(Scalar),
     Jump,
+    Dash(Scalar),
 }
 
 /// A marker component indicating that an entity is using a character controller.
@@ -34,21 +37,21 @@ pub struct CharacterController;
 // #[component(storage = "SparseSet")]
 pub struct Grounded;
 /// The acceleration used for character movement.
-#[derive(Component)]
+#[derive(Component, Reflect)]
 pub struct MovementAcceleration(Scalar);
 
 /// The damping factor used for slowing down movement.
-#[derive(Component)]
+#[derive(Component, Reflect)]
 pub struct MovementDampingFactor(Scalar);
 
 /// The strength of a jump.
-#[derive(Component)]
+#[derive(Component, Reflect)]
 pub struct JumpImpulse(Scalar);
 
 /// The maximum angle a slope can have for a character controller
 /// to be able to climb and jump. If the slope is steeper than this angle,
 /// the character will slide down.
-#[derive(Component)]
+#[derive(Component, Reflect)]
 pub struct MaxSlopeAngle(Scalar);
 
 /// A bundle that contains the components needed for a basic
@@ -64,7 +67,7 @@ pub struct CharacterControllerBundle {
 }
 
 /// A bundle that contains components for character movement.
-#[derive(Bundle)]
+#[derive(Bundle, Reflect)]
 pub struct MovementBundle {
     acceleration: MovementAcceleration,
     damping: MovementDampingFactor,
@@ -128,8 +131,8 @@ fn keyboard_input(
     mut movement_event_writer: EventWriter<MovementAction>,
     keyboard_input: Res<ButtonInput<KeyCode>>,
 ) {
-    let left = keyboard_input.any_pressed([KeyCode::KeyA, KeyCode::ArrowLeft]);
-    let right = keyboard_input.any_pressed([KeyCode::KeyD, KeyCode::ArrowRight]);
+    let left = keyboard_input.any_pressed([KeyCode::ArrowLeft]);
+    let right = keyboard_input.any_pressed([KeyCode::ArrowRight]);
 
     let horizontal = right as i8 - left as i8;
     let direction = horizontal as Scalar;
@@ -138,8 +141,12 @@ fn keyboard_input(
         movement_event_writer.write(MovementAction::Move(direction));
     }
 
-    if keyboard_input.just_pressed(KeyCode::Space) {
+    if keyboard_input.just_pressed(KeyCode::KeyZ) {
         movement_event_writer.write(MovementAction::Jump);
+    }
+
+    if keyboard_input.just_pressed(KeyCode::KeyC) {
+        movement_event_writer.write(MovementAction::Dash(direction));
     }
 }
 
@@ -213,6 +220,11 @@ fn movement(
                     if is_grounded {
                         linear_velocity.y = jump_impulse.0;
                     }
+                }
+                MovementAction::Dash(direction) => {
+                    // Dash is a quick burst of movement in the X direction
+                    linear_velocity.x +=
+                        *direction * movement_acceleration.0 * DASH_SPEED_MODIFIER * delta_time;
                 }
             }
         }
