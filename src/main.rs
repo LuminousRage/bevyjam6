@@ -13,6 +13,13 @@ mod player;
 mod screens;
 mod theme;
 
+use bevy_mod_imgui::prelude::*;
+
+#[derive(Resource)]
+struct ImguiState {
+    demo_window_open: bool,
+}
+
 use avian2d::{PhysicsPlugins, math::*, prelude::*};
 use bevy::{asset::AssetMetaCheck, prelude::*};
 #[cfg(feature = "dev")]
@@ -63,6 +70,12 @@ impl Plugin for AppPlugin {
         // pysicks
         app.insert_resource(ClearColor(Color::srgb(0.05, 0.05, 0.1)))
             .insert_resource(Gravity(Vector::NEG_Y * 1000.0));
+
+        app.insert_resource(ImguiState {
+            demo_window_open: true,
+        })
+        .add_plugins(bevy_mod_imgui::ImguiPlugin::default())
+        .add_systems(Update, imgui_example_ui);
 
         #[cfg(feature = "dev")]
         app.add_plugins((
@@ -116,4 +129,11 @@ struct PausableSystems;
 
 fn spawn_camera(mut commands: Commands) {
     commands.spawn((Name::new("Camera"), Camera2d));
+}
+
+fn imgui_example_ui(mut context: NonSendMut<ImguiContext>, mut state: ResMut<ImguiState>) {
+    let ui = context.ui();
+    if state.demo_window_open {
+        ui.show_demo_window(&mut state.demo_window_open);
+    }
 }

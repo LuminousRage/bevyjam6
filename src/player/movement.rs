@@ -18,6 +18,7 @@ pub(super) fn plugin(app: &mut App) {
             apply_movement_damping,
         ),
     );
+    app.register_type::<JumpImpulse>();
 }
 
 /// An event sent for a movement input action.
@@ -46,6 +47,7 @@ pub struct MovementDampingFactor(Scalar);
 
 /// The strength of a jump.
 #[derive(Component, Reflect)]
+#[reflect(Component)]
 pub struct JumpImpulse(Scalar);
 
 /// The maximum angle a slope can have for a character controller
