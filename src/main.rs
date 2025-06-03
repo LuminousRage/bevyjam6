@@ -58,6 +58,7 @@ impl Plugin for AppPlugin {
             screens::plugin,
             theme::plugin,
             player::plugin,
+            demo::plugin,
         ));
 
         #[cfg(feature = "dev")]
