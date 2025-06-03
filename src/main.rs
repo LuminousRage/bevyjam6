@@ -5,15 +5,15 @@
 
 mod asset_tracking;
 mod audio;
-mod demo;
 #[cfg(feature = "dev")]
 mod dev_tools;
+mod level;
 mod menus;
 mod player;
 mod screens;
 mod theme;
 
-use avian2d::PhysicsPlugins;
+use avian2d::{PhysicsPlugins, math::*, prelude::*};
 use bevy::{asset::AssetMetaCheck, prelude::*};
 #[cfg(feature = "dev")]
 use bevy_inspector_egui::{bevy_egui::EguiPlugin, quick::WorldInspectorPlugin};
@@ -58,8 +58,11 @@ impl Plugin for AppPlugin {
             screens::plugin,
             theme::plugin,
             player::plugin,
-            demo::plugin,
         ));
+
+        // pysicks
+        app.insert_resource(ClearColor(Color::srgb(0.05, 0.05, 0.1)))
+            .insert_resource(Gravity(Vector::NEG_Y * 1000.0));
 
         #[cfg(feature = "dev")]
         app.add_plugins((
