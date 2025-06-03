@@ -5,6 +5,8 @@
 use avian2d::{math::*, prelude::*};
 use bevy::prelude::*;
 
+use crate::physics::creature::{CreaturePhysicsBundle, Flying, Grounded};
+
 use super::configs::{
     CHARACTER_GRAVITY_SCALE, DASH_DURATION_SECONDS, DASH_SPEED_MODIFIER, JUMP_DURATION_SECONDS,
     JUMP_IMPULSE, MAX_SLOPE_ANGLE, MOVEMENT_ACCELERATION, MOVEMENT_DAMPING,
@@ -16,17 +18,13 @@ pub(super) fn plugin(app: &mut App) {
         (
             keyboard_input,
             gamepad_input,
-            update_grounded,
             handle_dashing,
             handle_jump_end,
             movement,
-            apply_movement_damping,
         ),
     );
     app.register_type::<JumpImpulse>()
-        .register_type::<MovementAcceleration>()
-        .register_type::<MovementDampingFactor>()
-        .register_type::<MaxSlopeAngle>();
+        .register_type::<MovementAcceleration>();
 }
 
 /// An event sent for a movement input action.
@@ -42,11 +40,6 @@ pub enum MovementAction {
 #[derive(Component)]
 pub struct CharacterController;
 
-/// A marker component indicating that an entity is on the ground.
-#[derive(Component)]
-#[component(storage = "SparseSet")]
-pub struct Grounded;
-
 #[derive(Component)]
 #[component(storage = "SparseSet")]
 pub struct Dashing(f32);
@@ -60,22 +53,10 @@ pub struct Jumping(f32);
 #[reflect(Component)]
 pub struct MovementAcceleration(Scalar);
 
-/// The damping factor used for slowing down movement.
-#[derive(Component, Reflect)]
-#[reflect(Component)]
-pub struct MovementDampingFactor(Scalar);
-
 /// The strength of a jump.
 #[derive(Component, Reflect)]
 #[reflect(Component)]
 pub struct JumpImpulse(Scalar);
-
-/// The maximum angle a slope can have for a character controller
-/// to be able to climb and jump. If the slope is steeper than this angle,
-/// the character will slide down.
-#[derive(Component, Reflect)]
-#[reflect(Component)]
-pub struct MaxSlopeAngle(Scalar);
 
 /// The direction the player is facing.
 #[derive(Component, Reflect)]
@@ -98,10 +79,9 @@ pub struct CharacterControllerBundle {
 #[derive(Bundle, Reflect)]
 pub struct MovementBundle {
     acceleration: MovementAcceleration,
-    damping: MovementDampingFactor,
     jump_impulse: JumpImpulse,
-    max_slope_angle: MaxSlopeAngle,
     player_face_direction: PlayerFaceDirection,
+    physics: CreaturePhysicsBundle,
 }
 
 impl MovementBundle {
@@ -113,9 +93,8 @@ impl MovementBundle {
     ) -> Self {
         Self {
             acceleration: MovementAcceleration(acceleration),
-            damping: MovementDampingFactor(damping),
             jump_impulse: JumpImpulse(jump_impulse),
-            max_slope_angle: MaxSlopeAngle(max_slope_angle),
+            physics: CreaturePhysicsBundle::new(damping, max_slope_angle),
             player_face_direction: PlayerFaceDirection(1.0),
         }
     }
@@ -187,33 +166,6 @@ fn gamepad_input(
     }
 }
 
-/// Updates the [`Grounded`] status for character controllers.
-fn update_grounded(
-    mut commands: Commands,
-    mut query: Query<
-        (Entity, &ShapeHits, &Rotation, Option<&MaxSlopeAngle>),
-        With<CharacterController>,
-    >,
-) {
-    for (entity, hits, rotation, max_slope_angle) in &mut query {
-        // The character is grounded if the shape caster has a hit with a normal
-        // that isn't too steep.
-        let is_grounded = hits.iter().any(|hit| {
-            if let Some(angle) = max_slope_angle {
-                (rotation * -hit.normal2).angle_to(Vector::Y).abs() <= angle.0
-            } else {
-                true
-            }
-        });
-
-        if is_grounded {
-            commands.entity(entity).insert(Grounded);
-        } else {
-            commands.entity(entity).remove::<Grounded>();
-        }
-    }
-}
-
 /// Responds to [`MovementAction`] events and moves character controllers accordingly.
 /// TODO: maybe break this up
 fn movement(
@@ -280,7 +232,8 @@ fn movement(
                     }
                     commands
                         .entity(entity)
-                        .insert(Dashing(DASH_DURATION_SECONDS));
+                        .insert(Dashing(DASH_DURATION_SECONDS))
+                        .insert(Flying);
                     linear_velocity.x += player_direction.0
                         * movement_acceleration.0
                         * DASH_SPEED_MODIFIER
@@ -321,21 +274,14 @@ fn handle_dashing(
 
     for (entity, mut dashing, mut gravity_scale, mut linear_velocity) in &mut query {
         if dashing.0 <= 0.0 {
-            commands.entity(entity).remove::<Dashing>();
+            commands
+                .entity(entity)
+                .remove::<Dashing>()
+                .remove::<Flying>();
             gravity_scale.0 = CHARACTER_GRAVITY_SCALE;
             linear_velocity.x *= 0.4;
         } else {
             dashing.0 -= delta_time;
         }
-    }
-}
-
-/// Slows down movement in the X direction.
-fn apply_movement_damping(
-    mut query: Query<(&MovementDampingFactor, &mut LinearVelocity), Without<Dashing>>,
-) {
-    for (damping_factor, mut linear_velocity) in &mut query {
-        // We could use `LinearDamping`, but we don't want to dampen movement along the Y axis
-        linear_velocity.x *= 1.0 / damping_factor.0;
     }
 }

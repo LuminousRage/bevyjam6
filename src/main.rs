@@ -4,12 +4,14 @@
 #![cfg_attr(not(feature = "dev"), windows_subsystem = "windows")]
 
 mod asset_tracking;
-mod health;
 mod audio;
 #[cfg(feature = "dev")]
 mod dev_tools;
+// mod enemy;
+mod health;
 mod level;
 mod menus;
+mod physics;
 mod player;
 mod screens;
 mod theme;
@@ -59,6 +61,8 @@ impl Plugin for AppPlugin {
             screens::plugin,
             theme::plugin,
             player::plugin,
+            // enemy::plugin,
+            physics::plugin,
             health::plugin,
         ));
 
