@@ -16,7 +16,8 @@ pub(super) fn plugin(app: &mut App) {
         (
             keyboard_input,
             gamepad_input,
-            update_grounded,
+            (update_grounded, detect_coyote_time_start).chain(),
+            handle_coyote_time,
             handle_dashing,
             handle_jump_end,
             movement,
@@ -54,6 +55,10 @@ pub struct Dashing(f32);
 #[derive(Component)]
 #[component(storage = "SparseSet")]
 pub struct Jumping(f32);
+
+#[derive(Component)]
+#[component(storage = "SparseSet")]
+pub struct Coyote(f32);
 
 /// The acceleration used for character movement.
 #[derive(Component, Reflect)]
@@ -228,6 +233,7 @@ fn movement(
         &mut LinearVelocity,
         Has<Grounded>,
         Has<Dashing>,
+        Has<Coyote>,
         &mut GravityScale,
     )>,
 ) {
@@ -244,6 +250,7 @@ fn movement(
             mut linear_velocity,
             is_grounded,
             is_dashing,
+            is_coyote,
             mut gravity,
         ) in &mut controllers
         {
@@ -257,7 +264,7 @@ fn movement(
                     linear_velocity.x += *direction * movement_acceleration.0 * delta_time;
                 }
                 MovementAction::JumpStart => {
-                    if is_grounded {
+                    if is_grounded || is_coyote {
                         commands
                             .entity(entity)
                             .insert(Jumping(JUMP_DURATION_SECONDS));
@@ -289,6 +296,27 @@ fn movement(
                     gravity.0 = 0.0;
                 }
             }
+        }
+    }
+}
+
+fn detect_coyote_time_start(mut removals: RemovedComponents<Grounded>, mut commands: Commands) {
+    for entity in removals.read() {
+        commands.entity(entity).insert(Coyote(0.2));
+    }
+}
+
+fn handle_coyote_time(
+    time: Res<Time>,
+    mut commands: Commands,
+    mut query: Query<(Entity, &mut Coyote)>,
+) {
+    let delta_time = time.delta_secs_f64().adjust_precision();
+    for (entity, mut coyote) in &mut query {
+        if coyote.0 <= 0.0 {
+            commands.entity(entity).remove::<Coyote>();
+        } else {
+            coyote.0 -= delta_time;
         }
     }
 }
