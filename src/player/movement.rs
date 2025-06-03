@@ -5,6 +5,8 @@
 use avian2d::{math::*, prelude::*};
 use bevy::prelude::*;
 
+use crate::health::Health;
+
 pub(super) fn plugin(app: &mut App) {
     app.add_event::<MovementAction>().add_systems(
         Update,

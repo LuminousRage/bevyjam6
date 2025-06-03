@@ -1,7 +1,7 @@
 use avian2d::{math::*, prelude::*};
 use bevy::prelude::*;
 
-use crate::asset_tracking::LoadResource;
+use crate::{asset_tracking::LoadResource, health::Health};
 
 use super::movement::CharacterControllerBundle;
 
@@ -40,6 +40,7 @@ pub fn player(player_assets: &PlayerAssets) -> impl Bundle {
             400.0,
             (30.0 as Scalar).to_radians(),
         ),
+        Health::new(100.0),
         Friction::ZERO.with_combine_rule(CoefficientCombine::Min),
         Restitution::ZERO.with_combine_rule(CoefficientCombine::Min),
         ColliderDensity(2.0),
