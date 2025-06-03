@@ -210,6 +210,7 @@ fn update_grounded(
 }
 
 /// Responds to [`MovementAction`] events and moves character controllers accordingly.
+/// TODO: maybe break this up
 fn movement(
     time: Res<Time>,
     mut commands: Commands,
@@ -281,6 +282,7 @@ fn movement(
     }
 }
 
+// maybe use an event for this, so collisions/damage can cancel dash
 fn handle_dashing(
     time: Res<Time>,
     mut commands: Commands,
