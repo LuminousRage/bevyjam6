@@ -3,7 +3,10 @@ use bevy::prelude::*;
 
 use crate::{asset_tracking::LoadResource, health::Health};
 
-use super::movement::CharacterControllerBundle;
+use super::{
+    configs::{CHARACTER_GRAVITY_SCALE, CHARACTER_HEALTH},
+    movement::CharacterControllerBundle,
+};
 
 pub(super) fn plugin(app: &mut App) {
     app.register_type::<PlayerAssets>();
@@ -35,10 +38,10 @@ pub fn player(player_assets: &PlayerAssets) -> impl Bundle {
             ..default()
         },
         CharacterControllerBundle::new(Collider::capsule(12.5, 20.0)),
-        Health::new(100.0),
+        Health::new(CHARACTER_HEALTH),
         Friction::ZERO.with_combine_rule(CoefficientCombine::Min),
         Restitution::ZERO.with_combine_rule(CoefficientCombine::Min),
         ColliderDensity(2.0),
-        GravityScale(1.5),
+        GravityScale(CHARACTER_GRAVITY_SCALE),
     )
 }
