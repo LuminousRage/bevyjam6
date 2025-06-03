@@ -1,12 +1,9 @@
-use avian2d::{math::*, prelude::*};
+use avian2d::prelude::*;
 use bevy::prelude::*;
 
-use crate::asset_tracking::LoadResource;
+use crate::{asset_tracking::LoadResource, health::Health};
 
-use super::{
-    configs::{JUMP_IMPULSE, MOVEMENT_ACCELERATION},
-    movement::CharacterControllerBundle,
-};
+use super::movement::CharacterControllerBundle;
 
 pub(super) fn plugin(app: &mut App) {
     app.register_type::<PlayerAssets>();
@@ -38,6 +35,7 @@ pub fn player(player_assets: &PlayerAssets) -> impl Bundle {
             ..default()
         },
         CharacterControllerBundle::new(Collider::capsule(12.5, 20.0)),
+        Health::new(100.0),
         Friction::ZERO.with_combine_rule(CoefficientCombine::Min),
         Restitution::ZERO.with_combine_rule(CoefficientCombine::Min),
         ColliderDensity(2.0),

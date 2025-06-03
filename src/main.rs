@@ -4,6 +4,7 @@
 #![cfg_attr(not(feature = "dev"), windows_subsystem = "windows")]
 
 mod asset_tracking;
+mod health;
 mod audio;
 #[cfg(feature = "dev")]
 mod dev_tools;
@@ -58,6 +59,7 @@ impl Plugin for AppPlugin {
             screens::plugin,
             theme::plugin,
             player::plugin,
+            health::plugin,
         ));
 
         // pysicks
