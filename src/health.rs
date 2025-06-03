@@ -14,8 +14,8 @@ pub struct Health {
     max: f32,
 }
 impl Health {
-    pub fn new(max: f32) -> Health {
-        Health { max, current: max }
+    pub const fn new(max: f32) -> Self {
+        Self { max, current: max }
     }
 }
 
