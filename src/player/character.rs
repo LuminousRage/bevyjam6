@@ -1,7 +1,7 @@
 use avian2d::{math::*, prelude::*};
 use bevy::prelude::*;
 
-use crate::{asset_tracking::LoadResource, demo::player::Player, screens::Screen};
+use crate::{asset_tracking::LoadResource, screens::Screen};
 
 use super::movement::CharacterControllerBundle;
 
@@ -70,7 +70,6 @@ pub fn spawn_level(mut commands: Commands, player_assets: Res<PlayerAssets>) {
 fn player(player_assets: &PlayerAssets) -> impl Bundle {
     (
         Name::new("Player"),
-        Player,
         Transform::from_scale(Vec2::splat(0.5).extend(1.0)),
         Sprite {
             image: player_assets.player.clone(),
