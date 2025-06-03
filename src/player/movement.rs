@@ -6,7 +6,8 @@ use avian2d::{math::*, prelude::*};
 use bevy::prelude::*;
 
 use super::configs::{
-    DASH_SPEED_MODIFIER, JUMP_IMPULSE, MAX_SLOPE_ANGLE, MOVEMENT_ACCELERATION, MOVEMENT_DAMPING,
+    CHARACTER_GRAVITY_SCALE, DASH_DURATION_SECONDS, DASH_SPEED_MODIFIER, JUMP_IMPULSE,
+    MAX_SLOPE_ANGLE, MOVEMENT_ACCELERATION, MOVEMENT_DAMPING,
 };
 
 pub(super) fn plugin(app: &mut App) {
@@ -16,18 +17,23 @@ pub(super) fn plugin(app: &mut App) {
             keyboard_input,
             gamepad_input,
             update_grounded,
+            handle_dashing,
             movement,
             apply_movement_damping,
         ),
     );
-    app.register_type::<JumpImpulse>();
+    app.register_type::<JumpImpulse>()
+        .register_type::<MovementAcceleration>()
+        .register_type::<MovementDampingFactor>()
+        .register_type::<MaxSlopeAngle>();
 }
 
 /// An event sent for a movement input action.
 #[derive(Event)]
 pub enum MovementAction {
     Move(Scalar),
-    Jump,
+    JumpStart,
+    JumpEnd,
     Dash,
 }
 
@@ -37,8 +43,12 @@ pub struct CharacterController;
 
 /// A marker component indicating that an entity is on the ground.
 #[derive(Component)]
-// #[component(storage = "SparseSet")]
+#[component(storage = "SparseSet")]
 pub struct Grounded;
+
+#[derive(Component)]
+#[component(storage = "SparseSet")]
+pub struct Dashing(f32);
 
 /// The acceleration used for character movement.
 #[derive(Component, Reflect)]
@@ -145,7 +155,10 @@ fn keyboard_input(
     }
 
     if keyboard_input.just_pressed(KeyCode::KeyZ) {
-        movement_event_writer.write(MovementAction::Jump);
+        movement_event_writer.write(MovementAction::JumpStart);
+    }
+    if keyboard_input.just_released(KeyCode::KeyZ) {
+        movement_event_writer.write(MovementAction::JumpEnd);
     }
 
     if keyboard_input.just_pressed(KeyCode::KeyC) {
@@ -164,7 +177,7 @@ fn gamepad_input(
         }
 
         if gamepad.just_pressed(GamepadButton::South) {
-            movement_event_writer.write(MovementAction::Jump);
+            movement_event_writer.write(MovementAction::JumpStart);
         }
     }
 }
@@ -199,13 +212,17 @@ fn update_grounded(
 /// Responds to [`MovementAction`] events and moves character controllers accordingly.
 fn movement(
     time: Res<Time>,
+    mut commands: Commands,
     mut movement_event_reader: EventReader<MovementAction>,
     mut controllers: Query<(
+        Entity,
         &MovementAcceleration,
         &JumpImpulse,
         &mut PlayerFaceDirection,
         &mut LinearVelocity,
         Has<Grounded>,
+        Has<Dashing>,
+        &mut GravityScale,
     )>,
 ) {
     // Precision is adjusted so that the example works with
@@ -214,36 +231,78 @@ fn movement(
 
     for event in movement_event_reader.read() {
         for (
+            entity,
             movement_acceleration,
             jump_impulse,
             mut player_direction,
             mut linear_velocity,
             is_grounded,
+            is_dashing,
+            mut gravity,
         ) in &mut controllers
         {
             match event {
                 MovementAction::Move(direction) => {
+                    if is_dashing {
+                        continue;
+                    }
                     player_direction.0 = *direction;
+
                     linear_velocity.x += *direction * movement_acceleration.0 * delta_time;
                 }
-                MovementAction::Jump => {
+                MovementAction::JumpStart => {
                     if is_grounded {
-                        linear_velocity.y = jump_impulse.0;
+                        linear_velocity.y += jump_impulse.0;
+                    }
+                }
+                MovementAction::JumpEnd => {
+                    // is in air and is going up
+                    if !is_grounded && linear_velocity.y > 0.0 {
+                        linear_velocity.y *= 0.2; // Reduce upward velocity when jump ends
                     }
                 }
                 MovementAction::Dash => {
+                    if is_dashing {
+                        // Already dashing, do nothing
+                        continue;
+                    }
+                    commands
+                        .entity(entity)
+                        .insert(Dashing(DASH_DURATION_SECONDS));
                     linear_velocity.x += player_direction.0
                         * movement_acceleration.0
                         * DASH_SPEED_MODIFIER
                         * delta_time;
+                    linear_velocity.y = 0.0;
+                    gravity.0 = 0.0;
                 }
             }
         }
     }
 }
 
+fn handle_dashing(
+    time: Res<Time>,
+    mut commands: Commands,
+    mut query: Query<(Entity, &mut Dashing, &mut GravityScale, &mut LinearVelocity)>,
+) {
+    let delta_time = time.delta_secs_f64().adjust_precision();
+
+    for (entity, mut dashing, mut gravity_scale, mut linear_velocity) in &mut query {
+        if dashing.0 <= 0.0 {
+            commands.entity(entity).remove::<Dashing>();
+            gravity_scale.0 = CHARACTER_GRAVITY_SCALE;
+            linear_velocity.x *= 0.4;
+        } else {
+            dashing.0 -= delta_time;
+        }
+    }
+}
+
 /// Slows down movement in the X direction.
-fn apply_movement_damping(mut query: Query<(&MovementDampingFactor, &mut LinearVelocity)>) {
+fn apply_movement_damping(
+    mut query: Query<(&MovementDampingFactor, &mut LinearVelocity), Without<Dashing>>,
+) {
     for (damping_factor, mut linear_velocity) in &mut query {
         // We could use `LinearDamping`, but we don't want to dampen movement along the Y axis
         linear_velocity.x *= damping_factor.0;

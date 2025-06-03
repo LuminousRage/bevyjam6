@@ -62,7 +62,7 @@ impl Plugin for AppPlugin {
 
         // pysicks
         app.insert_resource(ClearColor(Color::srgb(0.05, 0.05, 0.1)))
-            .insert_resource(Gravity(Vector::NEG_Y * 1000.0));
+            .insert_resource(Gravity(Vector::NEG_Y * 1500.0));
 
         #[cfg(feature = "dev")]
         app.add_plugins((
