@@ -1,11 +1,9 @@
 use avian2d::{math::*, prelude::*};
 use bevy::prelude::*;
 
-use crate::{
-    asset_tracking::LoadResource,
-    demo::{movement::MovementController, player::Player},
-    screens::Screen,
-};
+use crate::{asset_tracking::LoadResource, demo::player::Player, screens::Screen};
+
+use super::movement::CharacterControllerBundle;
 
 pub(super) fn plugin(app: &mut App) {
     app.register_type::<PlayerAssets>();
@@ -32,39 +30,28 @@ impl FromWorld for PlayerAssets {
 }
 
 /// A system that spawns the main level.
-pub fn spawn_level(
-    mut commands: Commands,
-    player_assets: Res<PlayerAssets>,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
-) {
+pub fn spawn_level(mut commands: Commands, player_assets: Res<PlayerAssets>) {
     commands.spawn((
         Name::new("Level"),
         Transform::default(),
         Visibility::default(),
         StateScoped(Screen::Gameplay),
         children![
-            player(&player_assets, &mut meshes, &mut materials),
-            (
-                Name::new("Player"),
-                Collider::capsule(12.5, 20.0),
-                Transform::from_scale(Vec2::splat(0.5).extend(1.0)),
-                Sprite {
-                    image: player_assets.player.clone(),
-                    ..default()
-                },
-                // CharacterControllerBundle::new(Collider::capsule(12.5, 20.0)).with_movement(
-                //     1250.0,
-                //     0.92,
-                //     400.0,
-                //     (30.0 as Scalar).to_radians(),
-                // ),
-                Friction::ZERO.with_combine_rule(CoefficientCombine::Min),
-                Restitution::ZERO.with_combine_rule(CoefficientCombine::Min),
-                ColliderDensity(2.0),
-                GravityScale(1.5),
-                RigidBody::Dynamic,
-            )
+            player(&player_assets),
+            // (
+            //     Name::new("Player"),
+            //     Collider::capsule(12.5, 20.0),
+            //     Transform::from_scale(Vec2::splat(0.5).extend(1.0)),
+            //     Sprite {
+            //         image: player_assets.player.clone(),
+            //         ..default()
+            //     },
+            //     Friction::ZERO.with_combine_rule(CoefficientCombine::Min),
+            //     Restitution::ZERO.with_combine_rule(CoefficientCombine::Min),
+            //     ColliderDensity(2.0),
+            //     GravityScale(1.5),
+            //     RigidBody::Dynamic,
+            // )
         ],
     ));
 
@@ -81,33 +68,24 @@ pub fn spawn_level(
     ));
 }
 
-fn player(
-    player_assets: &PlayerAssets,
-    meshes: &mut Assets<Mesh>,
-    materials: &mut Assets<ColorMaterial>,
-) -> impl Bundle {
+fn player(player_assets: &PlayerAssets) -> impl Bundle {
     (
         Name::new("Player"),
         Player,
-        Collider::capsule(12.5, 20.0),
         Transform::from_scale(Vec2::splat(0.5).extend(1.0)),
-        // Sprite {
-        //     image: player_assets.player.clone(),
-        //     ..default()
-        // },
-        // CharacterControllerBundle::new(Collider::capsule(12.5, 20.0)).with_movement(
-        //     1250.0,
-        //     0.92,
-        //     400.0,
-        //     (30.0 as Scalar).to_radians(),
-        // ),
+        Sprite {
+            image: player_assets.player.clone(),
+            ..default()
+        },
+        CharacterControllerBundle::new(Collider::capsule(12.5, 20.0)).with_movement(
+            1250.0,
+            0.92,
+            400.0,
+            (30.0 as Scalar).to_radians(),
+        ),
         Friction::ZERO.with_combine_rule(CoefficientCombine::Min),
         Restitution::ZERO.with_combine_rule(CoefficientCombine::Min),
         ColliderDensity(2.0),
         GravityScale(1.5),
-        MovementController {
-            max_speed: 120.2,
-            ..default()
-        },
     )
 }
