@@ -18,6 +18,7 @@ pub(super) fn plugin(app: &mut App) {
         (
             keyboard_input,
             gamepad_input,
+            detect_coyote_time_start,
             handle_coyote_time,
             handle_dashing,
             handle_jump_end,
@@ -253,9 +254,11 @@ fn movement(
     }
 }
 
-// maybe filter this by player or not...
-pub fn detect_coyote_time_start(mut removals: RemovedComponents<Grounded>, mut commands: Commands) {
-    for entity in removals.read() {
+pub fn detect_coyote_time_start(
+    query: Query<Entity, (With<CharacterController>, With<Grounded>, Without<Coyote>)>,
+    mut commands: Commands,
+) {
+    for entity in query {
         commands.entity(entity).insert(Coyote(0.2));
     }
 }
@@ -263,7 +266,7 @@ pub fn detect_coyote_time_start(mut removals: RemovedComponents<Grounded>, mut c
 fn handle_coyote_time(
     time: Res<Time>,
     mut commands: Commands,
-    mut query: Query<(Entity, &mut Coyote)>,
+    mut query: Query<(Entity, &mut Coyote), Without<Grounded>>,
 ) {
     let delta_time = time.delta_secs_f64().adjust_precision();
     for (entity, mut coyote) in &mut query {

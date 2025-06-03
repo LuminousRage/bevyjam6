@@ -7,15 +7,9 @@ use bevy::prelude::*;
 use crate::player::movement::detect_coyote_time_start;
 
 pub(super) fn plugin(app: &mut App) {
-    app.add_systems(
-        Update,
-        (
-            (update_grounded, detect_coyote_time_start).chain(),
-            apply_movement_damping,
-        ),
-    )
-    .register_type::<MovementDampingFactor>()
-    .register_type::<MaxSlopeAngle>();
+    app.add_systems(Update, (update_grounded, apply_movement_damping))
+        .register_type::<MovementDampingFactor>()
+        .register_type::<MaxSlopeAngle>();
 }
 
 /// A marker component indicating that an entity is on the ground.
