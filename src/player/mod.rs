@@ -1,6 +1,6 @@
 pub mod character;
 mod configs;
-mod movement;
+pub mod movement;
 
 use bevy::prelude::*;
 
