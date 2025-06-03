@@ -10,7 +10,6 @@ pub(super) fn plugin(app: &mut App) {
     app.load_resource::<PlayerAssets>();
     app.insert_resource(ClearColor(Color::srgb(0.05, 0.05, 0.1)))
         .insert_resource(Gravity(Vector::NEG_Y * 1000.0));
-    app.add_systems(OnEnter(Screen::Gameplay), spawn_level);
 }
 
 #[derive(Resource, Asset, Clone, Reflect)]
