@@ -13,7 +13,10 @@ mod player;
 mod screens;
 mod theme;
 
+use avian2d::PhysicsPlugins;
 use bevy::{asset::AssetMetaCheck, prelude::*};
+#[cfg(feature = "dev")]
+use bevy_inspector_egui::{bevy_egui::EguiPlugin, quick::WorldInspectorPlugin};
 
 fn main() -> AppExit {
     App::new().add_plugins(AppPlugin).run()
@@ -46,6 +49,7 @@ impl Plugin for AppPlugin {
 
         // Add other plugins.
         app.add_plugins((
+            PhysicsPlugins::default(),
             asset_tracking::plugin,
             audio::plugin,
             #[cfg(feature = "dev")]
@@ -54,6 +58,14 @@ impl Plugin for AppPlugin {
             screens::plugin,
             theme::plugin,
             player::plugin,
+        ));
+
+        #[cfg(feature = "dev")]
+        app.add_plugins((
+            EguiPlugin {
+                enable_multipass_for_primary_context: true,
+            },
+            WorldInspectorPlugin::new(),
         ));
 
         // Order new `AppSystems` variants by adding them here:

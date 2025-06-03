@@ -6,24 +6,24 @@ use crate::{Pause, demo::level::spawn_level, menus::Menu, screens::Screen};
 
 pub(super) fn plugin(app: &mut App) {
     // Entry point of the game. Add the system you are testing currently to swap it out.
-    app.add_systems(OnEnter(Screen::Gameplay), spawn_level);
+    // app.add_systems(OnEnter(Screen::Gameplay), spawn_level);
 
     // Toggle pause on key press.
-    app.add_systems(
-        Update,
-        (
-            (pause, spawn_pause_overlay, open_pause_menu).run_if(
-                in_state(Screen::Gameplay)
-                    .and(in_state(Menu::None))
-                    .and(input_just_pressed(KeyCode::KeyP).or(input_just_pressed(KeyCode::Escape))),
-            ),
-            close_menu.run_if(
-                in_state(Screen::Gameplay)
-                    .and(not(in_state(Menu::None)))
-                    .and(input_just_pressed(KeyCode::KeyP)),
-            ),
-        ),
-    );
+    // app.add_systems(
+    //     Update,
+    //     (
+    //         (pause, spawn_pause_overlay, open_pause_menu).run_if(
+    //             in_state(Screen::Gameplay)
+    //                 .and(in_state(Menu::None))
+    //                 .and(input_just_pressed(KeyCode::KeyP).or(input_just_pressed(KeyCode::Escape))),
+    //         ),
+    //         close_menu.run_if(
+    //             in_state(Screen::Gameplay)
+    //                 .and(not(in_state(Menu::None)))
+    //                 .and(input_just_pressed(KeyCode::KeyP)),
+    //         ),
+    //     ),
+    // );
     app.add_systems(OnExit(Screen::Gameplay), (close_menu, unpause));
     app.add_systems(
         OnEnter(Menu::None),
