@@ -6,8 +6,8 @@ use avian2d::{math::*, prelude::*};
 use bevy::prelude::*;
 
 use super::configs::{
-    CHARACTER_GRAVITY_SCALE, DASH_DURATION_SECONDS, DASH_SPEED_MODIFIER, JUMP_IMPULSE,
-    MAX_SLOPE_ANGLE, MOVEMENT_ACCELERATION, MOVEMENT_DAMPING,
+    CHARACTER_GRAVITY_SCALE, DASH_DURATION_SECONDS, DASH_SPEED_MODIFIER, JUMP_DURATION_SECONDS,
+    JUMP_IMPULSE, MAX_SLOPE_ANGLE, MOVEMENT_ACCELERATION, MOVEMENT_DAMPING,
 };
 
 pub(super) fn plugin(app: &mut App) {
@@ -18,6 +18,7 @@ pub(super) fn plugin(app: &mut App) {
             gamepad_input,
             update_grounded,
             handle_dashing,
+            handle_jump_end,
             movement,
             apply_movement_damping,
         ),
@@ -49,6 +50,10 @@ pub struct Grounded;
 #[derive(Component)]
 #[component(storage = "SparseSet")]
 pub struct Dashing(f32);
+
+#[derive(Component)]
+#[component(storage = "SparseSet")]
+pub struct Jumping(f32);
 
 /// The acceleration used for character movement.
 #[derive(Component, Reflect)]
@@ -253,13 +258,19 @@ fn movement(
                 }
                 MovementAction::JumpStart => {
                     if is_grounded {
+                        commands
+                            .entity(entity)
+                            .insert(Jumping(JUMP_DURATION_SECONDS));
                         linear_velocity.y += jump_impulse.0;
+                        gravity.0 = 1.0;
                     }
                 }
                 MovementAction::JumpEnd => {
                     // is in air and is going up
+                    commands.entity(entity).remove::<Jumping>();
                     if !is_grounded && linear_velocity.y > 0.0 {
-                        linear_velocity.y *= 0.2; // Reduce upward velocity when jump ends
+                        gravity.0 = CHARACTER_GRAVITY_SCALE;
+                        linear_velocity.y *= 0.2;
                     }
                 }
                 MovementAction::Dash => {
@@ -278,6 +289,24 @@ fn movement(
                     gravity.0 = 0.0;
                 }
             }
+        }
+    }
+}
+
+fn handle_jump_end(
+    time: Res<Time>,
+    mut commands: Commands,
+    mut query: Query<(Entity, &mut Jumping, &mut GravityScale, &mut LinearVelocity)>,
+) {
+    let delta_time = time.delta_secs_f64().adjust_precision();
+
+    for (entity, mut jumping, mut gravity_scale, mut linear_velocity) in &mut query {
+        if jumping.0 <= 0.0 {
+            commands.entity(entity).remove::<Jumping>();
+            gravity_scale.0 = CHARACTER_GRAVITY_SCALE;
+            linear_velocity.y *= 0.2;
+        } else {
+            jumping.0 -= delta_time;
         }
     }
 }
@@ -307,6 +336,6 @@ fn apply_movement_damping(
 ) {
     for (damping_factor, mut linear_velocity) in &mut query {
         // We could use `LinearDamping`, but we don't want to dampen movement along the Y axis
-        linear_velocity.x *= damping_factor.0;
+        linear_velocity.x *= 1.0 / damping_factor.0;
     }
 }
