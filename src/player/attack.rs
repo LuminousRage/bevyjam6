@@ -9,9 +9,14 @@ use super::{
 
 pub(super) fn plugin(app: &mut App) {
     app.add_event::<InputAttackEvent>();
+    app.add_event::<DoAttackEvent>();
     app.add_systems(
         Update,
-        ((keyboard_attack_input, gamepad_attack_input), attack_input).chain(),
+        (
+            (keyboard_attack_input, gamepad_attack_input),
+            (attack_kickstart, attack_timer_handler).chain(),
+        )
+            .chain(),
     );
 }
 
@@ -55,32 +60,21 @@ impl Attack {
         }
     }
 
-    /// Checks if the player should remove the component and reset to idle.
-    pub fn should_reset(&self) -> bool {
-        self.cooldown.finished() && self.attack_period.finished() && self.previous_attack_failed
-    }
-
-    pub fn update_failed_attack(&mut self) {
-        if self.cooldown.finished() && self.attack_period.finished() {
-            self.previous_attack_failed = true;
-        }
-    }
-
     /// Triggers an attack action - this should decrease the cooldown and reset everything.
-    pub fn trigger(&mut self) {
+    pub fn update_cooldown_timer(&mut self, decrease_cooldown: bool) {
         // that u128 duration cast to f64 should be fine
         // because it should never be bigger than INITIAL_ATTACK_COOLDOWN_MILLISECONDS
-        let decreased_cooldown =
-            self.cooldown.duration().as_millis() as f64 * COOLDOWN_INCREASE_FACTOR;
-        let new_cooldown =
-            (decreased_cooldown.round() as u64).max(MINIMUM_ATTACK_COOLDOWN_MILLISECONDS);
+        let current_cooldown = self.cooldown.duration().as_millis() as f64;
+
+        let new_cooldown = if decrease_cooldown {
+            let decreased_cooldown = current_cooldown * COOLDOWN_DECREASE_FACTOR;
+            (decreased_cooldown.round() as u64).max(MINIMUM_ATTACK_COOLDOWN_MILLISECONDS)
+        } else {
+            let increased_cooldown = current_cooldown * COOLDOWN_INCREASE_FACTOR;
+            (increased_cooldown.round() as u64).min(INITIAL_ATTACK_COOLDOWN_MILLISECONDS)
+        };
 
         *self = Attack::new(new_cooldown, false);
-    }
-
-    /// We can attack now
-    pub fn in_attack_time(&self) -> bool {
-        self.cooldown.finished() && !self.attack_period.finished()
     }
 
     /// Tick cooldown timer if not finished, otherwise tick attack period
@@ -90,6 +84,24 @@ impl Attack {
         } else {
             self.cooldown.tick(delta);
         }
+    }
+}
+
+// i think separating might help with testing
+/// Initialise attack component for idle players
+fn attack_kickstart(
+    mut commands: Commands,
+    mut input_event: EventReader<InputAttackEvent>,
+    player: Single<Entity, (With<Player>, Without<Attack>)>,
+) {
+    // Consume events so we don't block. but also we don't really care how many events get triggered
+    let mut has_attack_input = false;
+    for _ in input_event.read() {
+        has_attack_input = true;
+    }
+
+    if has_attack_input {
+        commands.entity(*player).insert(Attack::default());
     }
 }
 
@@ -103,37 +115,44 @@ fn attack_timer_handler(
     let (attack, entity) = &mut *player;
     attack.tick(time.delta());
 
+    // Consume events so we don't block. but also we don't really care how many events get triggered
+    let mut has_attack_input = false;
     for _ in input_event.read() {
-        if attack.in_attack_time() {
-            attack.trigger();
-            attack_event.write(DoAttackEvent);
+        has_attack_input = true;
+    }
+
+    match (
+        attack.cooldown.finished(),
+        attack.attack_period.just_finished(),
+        attack.previous_attack_failed,
+    ) {
+        // in cooldown period, just ignore
+        (false, _, _) => {
+            if attack.attack_period.just_finished() || attack.previous_attack_failed {
+                dbg!("Attack period finished while in cooldown, this should not happen");
+            }
+        }
+
+        // cooldown finished, we are in attack period
+        (true, false, status) => {
+            if has_attack_input {
+                attack.update_cooldown_timer(status);
+                attack_event.write(DoAttackEvent);
+                // handle weapon size
+            }
+            // no attack, gg go next
+        }
+
+        // first offence
+        (true, true, false) => {
+            attack.previous_attack_failed = true;
+            // handle weapon size
+        }
+
+        // second offence, remove pls
+        (true, true, true) => {
+            commands.entity(*entity).remove::<Attack>();
             // handle weapon size
         }
     }
-
-    if attack.should_reset() {
-        commands.entity(*entity).remove::<Attack>();
-    }
-
-    attack.update_failed_attack();
 }
-
-fn attack_input(
-    mut input_event: EventReader<InputAttackEvent>,
-    mut attack_event: EventWriter<DoAttackEvent>,
-    mut commands: Commands,
-    player_entity: Single<(Entity, Has<Attack>), With<Player>>,
-) {
-    for _ in input_event.read() {
-        let (entity, has_attack) = *player_entity;
-
-        // player was idle, start new attack
-        if !has_attack {
-            commands.entity(entity).insert(Attack::default());
-
-            attack_event.write(DoAttackEvent);
-        }
-    }
-}
-
-fn handle_attack(attack: Option<Single<&mut Attack, With<Player>>>) {}
