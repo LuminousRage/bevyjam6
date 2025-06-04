@@ -254,6 +254,7 @@ fn movement(
                         linear_velocity.y *= 0.2;
                     }
                 }
+                //TODO:only one dash in air, reset when grounded
                 MovementAction::Dash => {
                     if is_dashing {
                         // Already dashing, do nothing
@@ -263,7 +264,7 @@ fn movement(
                         .entity(entity)
                         .insert(Dashing::new(DASH_DURATION_MILLISECONDS))
                         .insert(Flying);
-                    linear_velocity.x += player_direction.0
+                    linear_velocity.x = player_direction.0
                         * movement_acceleration.0
                         * DASH_SPEED_MODIFIER
                         * delta_time;

@@ -1,10 +1,11 @@
 use avian2d::{
-    math::{Scalar, Vector},
+    math::{AdjustPrecision, Scalar, Vector},
     prelude::*,
 };
-use bevy::prelude::*;
-
-use crate::player::movement::detect_coyote_time_start;
+use bevy::{
+    math::ops::{exp, ln},
+    prelude::*,
+};
 
 pub(super) fn plugin(app: &mut App) {
     app.add_systems(Update, (update_grounded, apply_movement_damping))
@@ -74,9 +75,10 @@ fn update_grounded(
 /// Slows down movement in the X direction.
 fn apply_movement_damping(
     mut query: Query<(&MovementDampingFactor, &mut LinearVelocity), Without<Flying>>,
+    time: Res<Time>,
 ) {
     for (damping_factor, mut linear_velocity) in &mut query {
         // We could use `LinearDamping`, but we don't want to dampen movement along the Y axis
-        linear_velocity.x *= 1.0 / damping_factor.0;
+        linear_velocity.x *= exp(-time.delta_secs_f64().adjust_precision() * damping_factor.0);
     }
 }
