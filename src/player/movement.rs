@@ -12,7 +12,7 @@ use crate::physics::creature::{CreaturePhysicsBundle, Flying, Grounded};
 use super::configs::{
     CHARACTER_GRAVITY_SCALE, DASH_DURATION_MILLISECONDS, DASH_SPEED_MODIFIER,
     JUMP_DURATION_MILLISECONDS, JUMP_IMPULSE, MAX_SLOPE_ANGLE, MOVEMENT_ACCELERATION,
-    MOVEMENT_DAMPING,
+    MOVEMENT_DAMPING, MOVEMENT_SPEED,
 };
 
 pub(super) fn plugin(app: &mut App) {
@@ -234,8 +234,9 @@ fn movement(
                         continue;
                     }
                     player_direction.0 = *direction;
-
-                    linear_velocity.x += *direction * movement_acceleration.0 * delta_time;
+                    let desired_speed = *direction * MOVEMENT_SPEED - linear_velocity.x;
+                    dbg!((*direction, desired_speed, linear_velocity.x));
+                    linear_velocity.x += desired_speed * 10. * delta_time;
                 }
                 MovementAction::JumpStart => {
                     if is_grounded || is_coyote {
@@ -264,10 +265,8 @@ fn movement(
                         .entity(entity)
                         .insert(Dashing::new(DASH_DURATION_MILLISECONDS))
                         .insert(Flying);
-                    linear_velocity.x = player_direction.0
-                        * movement_acceleration.0
-                        * DASH_SPEED_MODIFIER
-                        * delta_time;
+                    linear_velocity.x =
+                        player_direction.0 * MOVEMENT_SPEED * DASH_SPEED_MODIFIER * delta_time;
                     linear_velocity.y = 0.0;
                     gravity.0 = 0.0;
                 }
