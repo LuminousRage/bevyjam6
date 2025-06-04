@@ -13,6 +13,9 @@ pub(super) fn plugin(app: &mut App) {
     app.load_resource::<PlayerAssets>();
 }
 
+#[derive(Component)]
+pub struct Player;
+
 #[derive(Resource, Asset, Clone, Reflect)]
 #[reflect(Resource)]
 pub struct PlayerAssets {
@@ -37,6 +40,7 @@ pub fn player(
     (
         Name::new("Player"),
         Transform::from_scale(Vec2::splat(0.5).extend(1.0)),
+        Player,
         // Sprite {
         //     image: player_assets.player.clone(),
         //     ..default()
