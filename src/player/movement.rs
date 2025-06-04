@@ -2,14 +2,17 @@
 //! Heavily referencing (aka plagiarising/copying)
 //! https://github.com/Jondolf/avian/blob/main/crates/avian2d/examples/dynamic_character_2d/plugin.rs
 
+use std::time::Duration;
+
 use avian2d::{math::*, prelude::*};
 use bevy::prelude::*;
 
 use crate::physics::creature::{CreaturePhysicsBundle, Flying, Grounded};
 
 use super::configs::{
-    CHARACTER_GRAVITY_SCALE, DASH_DURATION_SECONDS, DASH_SPEED_MODIFIER, JUMP_DURATION_SECONDS,
-    JUMP_IMPULSE, MAX_SLOPE_ANGLE, MOVEMENT_ACCELERATION, MOVEMENT_DAMPING,
+    CHARACTER_GRAVITY_SCALE, DASH_DURATION_MILLISECONDS, DASH_SPEED_MODIFIER,
+    JUMP_DURATION_MILLISECONDS, JUMP_IMPULSE, MAX_SLOPE_ANGLE, MOVEMENT_ACCELERATION,
+    MOVEMENT_DAMPING,
 };
 
 pub(super) fn plugin(app: &mut App) {
@@ -44,15 +47,33 @@ pub struct CharacterController;
 
 #[derive(Component)]
 #[component(storage = "SparseSet")]
-pub struct Dashing(f32);
+pub struct Dashing(Timer);
+
+impl Dashing {
+    fn new(duration: u64) -> Dashing {
+        Self(Timer::new(Duration::from_millis(duration), TimerMode::Once))
+    }
+}
 
 #[derive(Component)]
 #[component(storage = "SparseSet")]
-pub struct Jumping(f32);
+pub struct Jumping(Timer);
+
+impl Jumping {
+    fn new(duration: u64) -> Jumping {
+        Self(Timer::new(Duration::from_millis(duration), TimerMode::Once))
+    }
+}
 
 #[derive(Component)]
 #[component(storage = "SparseSet")]
-pub struct Coyote(f32);
+pub struct Coyote(Timer);
+
+impl Coyote {
+    fn new(duration: u64) -> Coyote {
+        Self(Timer::new(Duration::from_millis(duration), TimerMode::Once))
+    }
+}
 
 /// The acceleration used for character movement.
 #[derive(Component, Reflect)]
@@ -220,7 +241,7 @@ fn movement(
                     if is_grounded || is_coyote {
                         commands
                             .entity(entity)
-                            .insert(Jumping(JUMP_DURATION_SECONDS));
+                            .insert(Jumping::new(JUMP_DURATION_MILLISECONDS));
                         linear_velocity.y += jump_impulse.0;
                         gravity.0 = 1.0;
                     }
@@ -240,7 +261,7 @@ fn movement(
                     }
                     commands
                         .entity(entity)
-                        .insert(Dashing(DASH_DURATION_SECONDS))
+                        .insert(Dashing::new(DASH_DURATION_MILLISECONDS))
                         .insert(Flying);
                     linear_velocity.x += player_direction.0
                         * movement_acceleration.0
@@ -259,7 +280,7 @@ pub fn detect_coyote_time_start(
     mut commands: Commands,
 ) {
     for entity in query {
-        commands.entity(entity).insert(Coyote(0.2));
+        commands.entity(entity).insert(Coyote::new(200));
     }
 }
 
@@ -268,12 +289,11 @@ fn handle_coyote_time(
     mut commands: Commands,
     mut query: Query<(Entity, &mut Coyote), Without<Grounded>>,
 ) {
-    let delta_time = time.delta_secs_f64().adjust_precision();
     for (entity, mut coyote) in &mut query {
-        if coyote.0 <= 0.0 {
+        coyote.0.tick(time.delta());
+
+        if coyote.0.finished() {
             commands.entity(entity).remove::<Coyote>();
-        } else {
-            coyote.0 -= delta_time;
         }
     }
 }
@@ -283,15 +303,13 @@ fn handle_jump_end(
     mut commands: Commands,
     mut query: Query<(Entity, &mut Jumping, &mut GravityScale, &mut LinearVelocity)>,
 ) {
-    let delta_time = time.delta_secs_f64().adjust_precision();
-
     for (entity, mut jumping, mut gravity_scale, mut linear_velocity) in &mut query {
-        if jumping.0 <= 0.0 {
+        jumping.0.tick(time.delta());
+
+        if jumping.0.finished() {
             commands.entity(entity).remove::<Jumping>();
             gravity_scale.0 = CHARACTER_GRAVITY_SCALE;
             linear_velocity.y *= 0.2;
-        } else {
-            jumping.0 -= delta_time;
         }
     }
 }
@@ -302,18 +320,16 @@ fn handle_dashing(
     mut commands: Commands,
     mut query: Query<(Entity, &mut Dashing, &mut GravityScale, &mut LinearVelocity)>,
 ) {
-    let delta_time = time.delta_secs_f64().adjust_precision();
-
     for (entity, mut dashing, mut gravity_scale, mut linear_velocity) in &mut query {
-        if dashing.0 <= 0.0 {
+        dashing.0.tick(time.delta());
+
+        if dashing.0.finished() {
             commands
                 .entity(entity)
                 .remove::<Dashing>()
                 .remove::<Flying>();
             gravity_scale.0 = CHARACTER_GRAVITY_SCALE;
             linear_velocity.x *= 0.4;
-        } else {
-            dashing.0 -= delta_time;
         }
     }
 }
