@@ -47,11 +47,17 @@ pub struct CharacterController;
 
 #[derive(Component)]
 #[component(storage = "SparseSet")]
-pub struct Dashing(Timer);
+pub struct Dashing {
+    duration: Timer,
+    cooldown: Timer,
+}
 
 impl Dashing {
     fn new(duration: u64) -> Dashing {
-        Self(Timer::new(Duration::from_millis(duration), TimerMode::Once))
+        Self {
+            duration: Timer::new(Duration::from_millis(duration), TimerMode::Once),
+            cooldown: Timer::new(Duration::from_millis(duration + 100), TimerMode::Once),
+        }
     }
 }
 
@@ -318,18 +324,26 @@ fn handle_jump_end(
 fn handle_dashing(
     time: Res<Time>,
     mut commands: Commands,
-    mut query: Query<(Entity, &mut Dashing, &mut GravityScale, &mut LinearVelocity)>,
+    mut query: Query<(
+        Entity,
+        &mut Dashing,
+        &mut GravityScale,
+        &mut LinearVelocity,
+        Has<Grounded>,
+    )>,
 ) {
-    for (entity, mut dashing, mut gravity_scale, mut linear_velocity) in &mut query {
-        dashing.0.tick(time.delta());
+    for (entity, mut dashing, mut gravity_scale, mut linear_velocity, is_grounded) in &mut query {
+        dashing.duration.tick(time.delta());
+        dashing.cooldown.tick(time.delta());
 
-        if dashing.0.finished() {
-            commands
-                .entity(entity)
-                .remove::<Dashing>()
-                .remove::<Flying>();
+        if dashing.duration.just_finished() {
+            commands.entity(entity).remove::<Flying>();
             gravity_scale.0 = CHARACTER_GRAVITY_SCALE;
             linear_velocity.x *= 0.4;
+        }
+
+        if dashing.cooldown.finished() && is_grounded {
+            commands.entity(entity).remove::<Dashing>();
         }
     }
 }
