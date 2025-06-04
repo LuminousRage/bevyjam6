@@ -9,10 +9,13 @@ use bevy::prelude::*;
 
 use crate::physics::creature::{CreaturePhysicsBundle, Flying, Grounded};
 
-use super::configs::{
-    CHARACTER_GRAVITY_SCALE, DASH_DURATION_MILLISECONDS, DASH_SPEED_MODIFIER,
-    JUMP_DURATION_MILLISECONDS, JUMP_IMPULSE, KEYBOARD_DASH, KEYBOARD_JUMP, KEYBOARD_LEFT,
-    KEYBOARD_RIGHT, MAX_SLOPE_ANGLE, MOVEMENT_DAMPING, MOVEMENT_SPEED,
+use super::{
+    configs::{
+        CHARACTER_GRAVITY_SCALE, DASH_DURATION_MILLISECONDS, DASH_SPEED_MODIFIER,
+        JUMP_DURATION_MILLISECONDS, JUMP_IMPULSE, MAX_SLOPE_ANGLE, MOVEMENT_DAMPING,
+        MOVEMENT_SPEED,
+    },
+    input::{gamepad_movement_input, keyboard_movement_input},
 };
 
 pub(super) fn plugin(app: &mut App) {
@@ -21,8 +24,8 @@ pub(super) fn plugin(app: &mut App) {
         (
             (
                 (
-                    keyboard_input,
-                    gamepad_input,
+                    keyboard_movement_input,
+                    gamepad_movement_input,
                     detect_coyote_time_start,
                     handle_coyote_time,
                 ),
@@ -164,67 +167,6 @@ impl CharacterControllerBundle {
                 JUMP_IMPULSE,
                 MAX_SLOPE_ANGLE,
             ),
-        }
-    }
-}
-
-fn horizontal_input_to_direction(left: bool, right: bool) -> Scalar {
-    (right as i8 - left as i8) as Scalar
-}
-
-/// Sends [`MovementAction`] events based on keyboard input.
-fn keyboard_input(
-    mut movement_event_writer: EventWriter<MovementAction>,
-    keyboard_input: Res<ButtonInput<KeyCode>>,
-) {
-    let direction = {
-        let left = keyboard_input.any_pressed([KEYBOARD_LEFT]);
-        let right = keyboard_input.any_pressed([KEYBOARD_RIGHT]);
-        horizontal_input_to_direction(left, right)
-    };
-
-    if direction != 0.0 {
-        movement_event_writer.write(MovementAction::Move(direction));
-    }
-
-    if keyboard_input.just_pressed(KEYBOARD_JUMP) {
-        movement_event_writer.write(MovementAction::JumpStart);
-    }
-    if keyboard_input.just_released(KEYBOARD_JUMP) {
-        movement_event_writer.write(MovementAction::JumpEnd);
-    }
-
-    if keyboard_input.just_pressed(KEYBOARD_DASH) {
-        movement_event_writer.write(MovementAction::Dash);
-    }
-}
-
-/// Sends [`MovementAction`] events based on gamepad input.
-fn gamepad_input(
-    mut movement_event_writer: EventWriter<MovementAction>,
-    gamepads: Query<&Gamepad>,
-) {
-    for gamepad in gamepads.iter() {
-        if let Some(x) = gamepad.get(GamepadAxis::LeftStickX) {
-            movement_event_writer.write(MovementAction::Move(x as Scalar));
-        }
-
-        let direction = {
-            let left = gamepad.any_pressed([GamepadButton::DPadLeft]);
-            let right = gamepad.any_pressed([GamepadButton::DPadRight]);
-            horizontal_input_to_direction(left, right)
-        };
-
-        if direction != 0.0 {
-            movement_event_writer.write(MovementAction::Move(direction));
-        }
-
-        if gamepad.just_pressed(GamepadButton::South) {
-            movement_event_writer.write(MovementAction::JumpStart);
-        }
-
-        if gamepad.any_just_pressed([GamepadButton::RightTrigger, GamepadButton::RightTrigger2]) {
-            movement_event_writer.write(MovementAction::JumpEnd);
         }
     }
 }
