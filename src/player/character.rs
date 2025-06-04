@@ -6,6 +6,7 @@ use crate::{asset_tracking::LoadResource, health::Health};
 use super::{
     configs::{CHARACTER_GRAVITY_SCALE, CHARACTER_HEALTH},
     movement::CharacterControllerBundle,
+    weapon::weapon,
 };
 
 pub(super) fn plugin(app: &mut App) {
@@ -20,7 +21,9 @@ pub struct Player;
 #[reflect(Resource)]
 pub struct PlayerAssets {
     #[dependency]
-    player: Handle<Image>,
+    pub player: Handle<Image>,
+    #[dependency]
+    pub weapon: Handle<Image>,
 }
 
 impl FromWorld for PlayerAssets {
@@ -28,6 +31,7 @@ impl FromWorld for PlayerAssets {
         let assets = world.resource::<AssetServer>();
         Self {
             player: assets.load("images/player.png"),
+            weapon: assets.load("images/weapon.png"),
         }
     }
 }
@@ -45,9 +49,9 @@ pub fn player(
         //     image: player_assets.player.clone(),
         //     ..default()
         // },
-        Mesh2d(meshes.add(Capsule2d::new(25.0, 50.0))),
+        Mesh2d(meshes.add(Capsule2d::new(40.0, 70.0))),
         MeshMaterial2d(materials.add(Color::srgb(0.2, 0.7, 0.9))),
-        CharacterControllerBundle::new(Collider::capsule(25.0, 50.0)),
+        CharacterControllerBundle::new(Collider::capsule(40.0, 70.0)),
         Health::new(CHARACTER_HEALTH),
         Friction::ZERO.with_combine_rule(CoefficientCombine::Min),
         Restitution::ZERO.with_combine_rule(CoefficientCombine::Min),

@@ -2,7 +2,10 @@ use avian2d::prelude::*;
 use bevy::prelude::*;
 
 use crate::{
-    player::character::{PlayerAssets, player},
+    player::{
+        character::{PlayerAssets, player},
+        weapon::weapon,
+    },
     screens::Screen,
 };
 
@@ -18,7 +21,10 @@ pub fn spawn_level(
         Transform::default(),
         Visibility::default(),
         StateScoped(Screen::Gameplay),
-        children![player(&player_assets, &mut meshes, &mut materials),],
+        children![
+            player(&player_assets, &mut meshes, &mut materials),
+            weapon(&player_assets, &mut meshes, &mut materials)
+        ],
     ));
 
     commands.spawn((

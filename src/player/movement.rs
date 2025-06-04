@@ -103,9 +103,10 @@ pub struct MovementSpeed(Scalar);
 pub struct JumpImpulse(Scalar);
 
 /// The direction the player is facing.
+// this should really go in player
 #[derive(Component, Reflect)]
 #[reflect(Component)]
-pub struct PlayerFaceDirection(Scalar);
+pub struct PlayerFaceDirection(pub Scalar);
 
 /// A bundle that contains the components needed for a basic
 /// kinematic character controller.
