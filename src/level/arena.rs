@@ -18,7 +18,7 @@ pub fn spawn_level(
         Transform::default(),
         Visibility::default(),
         StateScoped(Screen::Gameplay),
-        children![player(&player_assets),],
+        children![player(&player_assets, &mut meshes, &mut materials),],
     ));
 
     commands.spawn((

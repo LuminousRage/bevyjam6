@@ -29,15 +29,21 @@ impl FromWorld for PlayerAssets {
     }
 }
 
-pub fn player(player_assets: &PlayerAssets) -> impl Bundle {
+pub fn player(
+    player_assets: &PlayerAssets,
+    meshes: &mut Assets<Mesh>,
+    materials: &mut Assets<ColorMaterial>,
+) -> impl Bundle {
     (
         Name::new("Player"),
         Transform::from_scale(Vec2::splat(0.5).extend(1.0)),
-        Sprite {
-            image: player_assets.player.clone(),
-            ..default()
-        },
-        CharacterControllerBundle::new(Collider::capsule(12.5, 20.0)),
+        // Sprite {
+        //     image: player_assets.player.clone(),
+        //     ..default()
+        // },
+        Mesh2d(meshes.add(Capsule2d::new(25.0, 50.0))),
+        MeshMaterial2d(materials.add(Color::srgb(0.2, 0.7, 0.9))),
+        CharacterControllerBundle::new(Collider::capsule(25.0, 50.0)),
         Health::new(CHARACTER_HEALTH),
         Friction::ZERO.with_combine_rule(CoefficientCombine::Min),
         Restitution::ZERO.with_combine_rule(CoefficientCombine::Min),
