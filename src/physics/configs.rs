@@ -1,0 +1,1 @@
+pub const GRAVITY_ACCELERATION: f32 = 1500.0;
