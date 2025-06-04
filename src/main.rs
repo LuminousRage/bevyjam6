@@ -21,6 +21,8 @@ use bevy::{asset::AssetMetaCheck, prelude::*};
 #[cfg(feature = "dev")]
 use bevy_inspector_egui::{bevy_egui::EguiPlugin, quick::WorldInspectorPlugin};
 
+use crate::physics::configs::GRAVITY_ACCELERATION;
+
 fn main() -> AppExit {
     App::new().add_plugins(AppPlugin).run()
 }
@@ -68,7 +70,7 @@ impl Plugin for AppPlugin {
 
         // pysicks
         app.insert_resource(ClearColor(Color::srgb(0.05, 0.05, 0.1)))
-            .insert_resource(Gravity(Vector::NEG_Y * 1500.0));
+            .insert_resource(Gravity(Vector::NEG_Y * GRAVITY_ACCELERATION));
 
         #[cfg(feature = "dev")]
         app.add_plugins((
