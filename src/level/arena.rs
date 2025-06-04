@@ -2,6 +2,7 @@ use avian2d::prelude::*;
 use bevy::prelude::*;
 
 use crate::{
+    enemy::imp::{ImpAssets, imp},
     player::character::{PlayerAssets, player},
     screens::Screen,
 };
@@ -10,6 +11,7 @@ use crate::{
 pub fn spawn_level(
     mut commands: Commands,
     player_assets: Res<PlayerAssets>,
+    imp_assets: Res<ImpAssets>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
@@ -20,6 +22,8 @@ pub fn spawn_level(
         StateScoped(Screen::Gameplay),
         children![player(&player_assets),],
     ));
+
+    commands.spawn(imp(&imp_assets, Vec3::new(200.0, 2000.0, 0.0)));
 
     commands.spawn((
         Name::new("Obj"),

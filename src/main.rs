@@ -7,7 +7,7 @@ mod asset_tracking;
 mod audio;
 #[cfg(feature = "dev")]
 mod dev_tools;
-// mod enemy;
+mod enemy;
 mod health;
 mod level;
 mod menus;
@@ -62,10 +62,10 @@ impl Plugin for AppPlugin {
             // menus::plugin,
             screens::plugin,
             theme::plugin,
-            player::plugin,
-            // enemy::plugin,
             physics::plugin,
             health::plugin,
+            player::plugin,
+            enemy::plugin,
         ));
 
         // pysicks
