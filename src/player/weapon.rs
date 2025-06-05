@@ -1,13 +1,13 @@
 use bevy::{prelude::*, sprite::Anchor};
 
-use crate::asset_tracking::LoadResource;
+use crate::{asset_tracking::LoadResource, player::attack::Attack};
 
 use super::{character::Player, movement::PlayerFaceDirection};
 
 pub(super) fn plugin(app: &mut App) {
     app.register_type::<WeaponAssets>();
     app.load_resource::<WeaponAssets>();
-    app.add_systems(Update, move_weapon);
+    app.add_systems(Update, move_weapon_while_idle);
 }
 
 // offset in pixels to line up the weapon
@@ -38,7 +38,7 @@ impl FromWorld for WeaponAssets {
     }
 }
 
-fn update_weapon_position() {}
+fn update_weapon_length(mut weapon: Single<(&Children), With<Weapon>>) {}
 
 pub fn weapon(player_assets: &WeaponAssets) -> impl Bundle {
     (
@@ -81,23 +81,30 @@ pub fn weapon(player_assets: &WeaponAssets) -> impl Bundle {
     )
 }
 
-fn move_weapon(
+fn move_weapon_while_idle(
     mut following: Single<&mut Transform, With<Weapon>>,
-    target: Single<(&Transform, &PlayerFaceDirection), (With<Player>, Without<Weapon>)>,
+    player: Option<
+        Single<
+            (&Transform, &PlayerFaceDirection),
+            (With<Player>, Without<Weapon>, Without<Attack>),
+        >,
+    >,
     time: Res<Time>,
 ) {
-    let (transform, face_direction) = *target;
-    let delta_time = time.delta_secs();
-    let Vec3 { x, y, z } = following.scale;
-    let direction = if following.translation.x > transform.translation.x {
-        1.0
-    } else {
-        -1.0
-    };
-    following.scale = Vec3::new(direction * x.abs(), y, z);
-    let target_translation =
-        &transform.translation + WEAPON_FOLLOW_OFFSET * (Vec3::new(-face_direction.0, 1., 1.));
-    following
-        .translation
-        .smooth_nudge(&target_translation, 2.0, delta_time);
+    if let Some(p) = player {
+        let (transform, face_direction) = *p;
+        let delta_time = time.delta_secs();
+        let Vec3 { x, y, z } = following.scale;
+        let direction = if following.translation.x > transform.translation.x {
+            1.0
+        } else {
+            -1.0
+        };
+        following.scale = Vec3::new(direction * x.abs(), y, z);
+        let target_translation =
+            &transform.translation + WEAPON_FOLLOW_OFFSET * (Vec3::new(-face_direction.0, 1., 1.));
+        following
+            .translation
+            .smooth_nudge(&target_translation, 2.0, delta_time);
+    }
 }
