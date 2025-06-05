@@ -38,10 +38,7 @@ impl FromWorld for WeaponAssets {
     }
 }
 
-// fn calculate_weapon_position() -> (f32, f32) {
-//     // let extend be at the centre, although we might want to change this later
-//     //
-// }
+fn update_weapon_position() {}
 
 pub fn weapon(player_assets: &WeaponAssets) -> impl Bundle {
     (
@@ -51,6 +48,7 @@ pub fn weapon(player_assets: &WeaponAssets) -> impl Bundle {
             scale: Vec2::splat(0.055).extend(1.0),
             ..default()
         },
+        Visibility::default(),
         children![
             (
                 Name::new("Base"),
