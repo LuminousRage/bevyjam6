@@ -241,7 +241,6 @@ fn movement(
                         linear_velocity.y *= 0.5;
                     }
                 }
-                //TODO:only one dash in air, reset when grounded
                 MovementAction::Dash => {
                     if is_dashing {
                         // Already dashing, do nothing
