@@ -1,4 +1,4 @@
-use bevy::{prelude::*, sprite::Anchor};
+use bevy::{prelude::*, sprite::Anchor, text::cosmic_text::rustybuzz::script::YI};
 
 use crate::{asset_tracking::LoadResource, player::attack::Attack};
 
@@ -120,18 +120,21 @@ pub fn weapon(player_assets: &WeaponAssets) -> impl Bundle {
 //todo: refactor this
 fn move_weapon_while_attack(
     mut following: Single<&mut Transform, With<Weapon>>,
-    player: Option<Single<(&Transform, &Player), (With<Attack>, Without<Weapon>)>>,
+    player: Option<Single<(&Transform, &Player, &Attack), Without<Weapon>>>,
     time: Res<Time>,
 ) {
     if let Some(p) = player {
-        let (transform, player) = *p;
+        let (transform, player, attack) = *p;
         let delta_time = time.delta_secs();
-
-        let target_translation = &transform.translation
-            + WEAPON_FOLLOW_OFFSET * (player.attack_direction * Vec2::new(3.0, 3.0)).extend(1.0);
-        following
-            .translation
-            .smooth_nudge(&target_translation, 2.0, delta_time);
+        if attack.cooldown.finished() {
+            let target_translation = &transform.translation
+                + WEAPON_FOLLOW_OFFSET
+                    * (player.attack_direction * Vec2::new(1.0, 1.0)).extend(1.0);
+            following.rotation = Quat::from_rotation_z(Vec2::Y.angle_to(player.attack_direction));
+            following
+                .translation
+                .smooth_nudge(&target_translation, 2.0, delta_time);
+        }
     }
 }
 
@@ -152,6 +155,7 @@ fn move_weapon_while_idle(
         following.scale = Vec3::new(direction * x.abs(), y, z);
         let target_translation = &transform.translation
             + WEAPON_FOLLOW_OFFSET * (Vec3::new(-player.face_direction.x, 1., 1.));
+        following.rotation = Quat::default();
         following
             .translation
             .smooth_nudge(&target_translation, 2.0, delta_time);

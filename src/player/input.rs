@@ -19,7 +19,7 @@ fn input_to_direction(left: bool, right: bool, up: bool, down: bool) -> Option<V
     if horizontal_movement == 0.0 && vertical_movement == 0.0 {
         return None;
     }
-    Some(Vec2::new(horizontal_movement, vertical_movement).normalize_or_zero())
+    Some(Vec2::new(horizontal_movement, vertical_movement))
 }
 
 /// Sends [`MovementAction`] events based on keyboard input.
@@ -65,7 +65,7 @@ pub fn gamepad_movement_input(
                 if left == 0.0 && up == 0.0 {
                     None
                 } else {
-                    Some(Vec2::new(left, up).normalize_or_zero())
+                    Some(Vec2::new(left, up))
                 }
             };
             let button_direction = {
@@ -108,7 +108,7 @@ pub fn keyboard_attack_input(
         input_to_direction(left, right, up, down)
     };
 
-    if let Some(d) = direction.filter(|d| d.x != 0.0) {
+    if let Some(d) = direction {
         attack_direction_writer.write(AttackDirection(d));
     }
 
@@ -131,7 +131,7 @@ pub fn gamepad_attack_input(
                 if left == 0.0 && up == 0.0 {
                     None
                 } else {
-                    Some(Vec2::new(left, up).normalize_or_zero())
+                    Some(Vec2::new(left, up))
                 }
             };
             let button_direction = {
@@ -144,7 +144,7 @@ pub fn gamepad_attack_input(
             button_direction.or(axis_direction)
         };
 
-        if let Some(d) = direction.filter(|d| d.x != 0.0) {
+        if let Some(d) = direction {
             attack_direction_writer.write(AttackDirection(d));
         }
 

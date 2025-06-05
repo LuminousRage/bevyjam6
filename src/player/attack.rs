@@ -2,6 +2,8 @@ use std::time::Duration;
 
 use bevy::prelude::*;
 
+use crate::physics::creature::Grounded;
+
 use super::{
     character::Player,
     input::{gamepad_attack_input, keyboard_attack_input},
@@ -193,9 +195,23 @@ fn do_attack(mut attack_event: EventReader<DoAttackEvent>) {
 
 fn player_attack_direction(
     mut input_event: EventReader<AttackDirection>,
-    mut player: Single<&mut Player>,
+    mut player: Single<(&mut Player, Has<Grounded>)>,
 ) {
+    let (p, is_grounded) = &mut *player;
+    // Reset to face direction if no input event
+    p.attack_direction = Vec2::new(p.face_direction.x, 0.0);
+
+    // note: this is only a vec2 because maybe we want diagonal attacks, but i lowkey regret making it like this now
     for AttackDirection(direction) in input_event.read() {
-        player.attack_direction = *direction;
+        let attack_dir = match direction {
+            d if d.y > 0.0 => Vec2::Y,
+            // only attack down if not grounded
+            d if d.y < 0.0 && !*is_grounded => Vec2::NEG_Y,
+            d if d.y < 0.0 && *is_grounded => continue,
+            d if d.x > 0.0 => Vec2::X,
+            d if d.x < 0.0 => Vec2::NEG_X,
+            _ => continue,
+        };
+        p.attack_direction = attack_dir;
     }
 }
