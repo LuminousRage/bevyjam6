@@ -1,3 +1,5 @@
+use std::f32::consts::PI;
+
 use bevy::{prelude::*, sprite::Anchor, text::cosmic_text::rustybuzz::script::YI};
 
 use crate::{asset_tracking::LoadResource, player::attack::Attack};
@@ -7,14 +9,7 @@ use super::character::Player;
 pub(super) fn plugin(app: &mut App) {
     app.register_type::<WeaponAssets>();
     app.load_resource::<WeaponAssets>();
-    app.add_systems(
-        Update,
-        (
-            move_weapon_while_idle,
-            move_weapon_while_attack,
-            update_weapon_length,
-        ),
-    );
+    app.add_systems(Update, (move_weapon, update_weapon_length));
 }
 
 // offset in pixels to line up the weapon
@@ -22,6 +17,7 @@ const OFFSET_FROM_BASE: u64 = 898;
 const OFFSET_FROM_EXTEND: u64 = 178;
 const EXTEND_SIZE: u64 = 595;
 const WEAPON_FOLLOW_OFFSET: Vec3 = Vec3::new(45.0, -35.0, -1.0);
+const WEAPON_ATTACK_HORIZONTAL_OFFSET: Vec3 = Vec3::new(-70.0, -35.0, -1.0);
 
 #[derive(Component)]
 pub struct Weapon;
@@ -117,47 +113,47 @@ pub fn weapon(player_assets: &WeaponAssets) -> impl Bundle {
     )
 }
 
-//todo: refactor this
-fn move_weapon_while_attack(
+fn move_weapon(
     mut following: Single<&mut Transform, With<Weapon>>,
-    player: Option<Single<(&Transform, &Player, &Attack), Without<Weapon>>>,
-    time: Res<Time>,
-) {
-    if let Some(p) = player {
-        let (transform, player, attack) = *p;
-        let delta_time = time.delta_secs();
-        if attack.cooldown.finished() {
-            let target_translation = &transform.translation
-                + WEAPON_FOLLOW_OFFSET
-                    * (player.attack_direction * Vec2::new(1.0, 1.0)).extend(1.0);
-            following.rotation = Quat::from_rotation_z(Vec2::Y.angle_to(player.attack_direction));
-            following
-                .translation
-                .smooth_nudge(&target_translation, 2.0, delta_time);
-        }
-    }
-}
+    player_without_attack: Option<
+        Single<(&Transform, &Player), (Without<Weapon>, Without<Attack>)>,
+    >,
+    player_with_attack: Option<Single<(&Transform, &Player, &Attack), Without<Weapon>>>,
 
-fn move_weapon_while_idle(
-    mut following: Single<&mut Transform, With<Weapon>>,
-    player: Option<Single<(&Transform, &Player), (Without<Weapon>, Without<Attack>)>>,
     time: Res<Time>,
 ) {
-    if let Some(p) = player {
+    let delta_time = time.delta_secs();
+
+    if let Some(p) = player_without_attack {
         let (transform, player) = *p;
-        let delta_time = time.delta_secs();
-        let Vec3 { x, y, z } = following.scale;
-        let direction = if following.translation.x > transform.translation.x {
-            1.0
-        } else {
-            -1.0
+
+        following.scale = {
+            let Vec3 { x, y, z } = following.scale;
+            let direction = if following.translation.x > transform.translation.x {
+                1.0
+            } else {
+                -1.0
+            };
+            Vec3::new(direction * x.abs(), y, z)
         };
-        following.scale = Vec3::new(direction * x.abs(), y, z);
+        following.rotation = Quat::default();
+
         let target_translation = &transform.translation
             + WEAPON_FOLLOW_OFFSET * (Vec3::new(-player.face_direction.x, 1., 1.));
-        following.rotation = Quat::default();
         following
             .translation
             .smooth_nudge(&target_translation, 2.0, delta_time);
+    }
+
+    if let Some(p) = player_with_attack {
+        let (transform, player, attack) = *p;
+        let target_translation = &transform.translation
+            + WEAPON_ATTACK_HORIZONTAL_OFFSET
+                * (player.attack_direction * Vec2::new(1.0, 1.0)).extend(1.0);
+
+        following.rotation = Quat::from_rotation_z(Vec2::Y.angle_to(player.attack_direction));
+        following
+            .translation
+            .smooth_nudge(&target_translation, 5.0, delta_time);
     }
 }
