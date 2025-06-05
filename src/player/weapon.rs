@@ -13,7 +13,7 @@ pub(super) fn plugin(app: &mut App) {
 // offset in pixels to line up the weapon
 const OFFSET_FROM_BASE: u64 = 898;
 const OFFSET_FROM_EXTEND: u64 = 178;
-const WEAPON_FOLLOW_OFFSET: Vec3 = Vec3::new(45.0, -40.0, -1.0);
+const WEAPON_FOLLOW_OFFSET: Vec3 = Vec3::new(45.0, -35.0, -1.0);
 
 #[derive(Component)]
 pub struct Weapon;
