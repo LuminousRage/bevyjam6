@@ -7,7 +7,14 @@ use super::character::Player;
 pub(super) fn plugin(app: &mut App) {
     app.register_type::<WeaponAssets>();
     app.load_resource::<WeaponAssets>();
-    app.add_systems(Update, (move_weapon_while_idle, update_weapon_length));
+    app.add_systems(
+        Update,
+        (
+            move_weapon_while_idle,
+            move_weapon_while_attack,
+            update_weapon_length,
+        ),
+    );
 }
 
 // offset in pixels to line up the weapon
@@ -110,7 +117,23 @@ pub fn weapon(player_assets: &WeaponAssets) -> impl Bundle {
     )
 }
 
-fn move_weapon_while_attack() {}
+//todo: refactor this
+fn move_weapon_while_attack(
+    mut following: Single<&mut Transform, With<Weapon>>,
+    player: Option<Single<(&Transform, &Player), (With<Attack>, Without<Weapon>)>>,
+    time: Res<Time>,
+) {
+    if let Some(p) = player {
+        let (transform, player) = *p;
+        let delta_time = time.delta_secs();
+
+        let target_translation = &transform.translation
+            + WEAPON_FOLLOW_OFFSET * (player.attack_direction * Vec2::new(3.0, 3.0)).extend(1.0);
+        following
+            .translation
+            .smooth_nudge(&target_translation, 2.0, delta_time);
+    }
+}
 
 fn move_weapon_while_idle(
     mut following: Single<&mut Transform, With<Weapon>>,
