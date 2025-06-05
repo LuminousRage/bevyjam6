@@ -1,7 +1,10 @@
 use avian2d::math::Scalar;
 use bevy::prelude::*;
 
-use crate::player::configs::{KEYBOARD_DOWN, KEYBOARD_UP};
+use crate::player::{
+    attack::AttackDirection,
+    configs::{KEYBOARD_DOWN, KEYBOARD_UP},
+};
 
 use super::{
     attack::InputAttackEvent,
@@ -32,8 +35,8 @@ pub fn keyboard_movement_input(
         input_to_direction(left, right, up, down)
     };
 
-    if let Some(d) = direction {
-        movement_event_writer.write(MovementAction::Move(d));
+    if let Some(direction) = direction.filter(|d| d.x != 0.0) {
+        movement_event_writer.write(MovementAction::Move(direction));
     }
 
     if keyboard_input.just_pressed(KEYBOARD_JUMP) {
@@ -75,7 +78,7 @@ pub fn gamepad_movement_input(
             button_direction.or(axis_direction)
         };
 
-        if let Some(d) = direction {
+        if let Some(d) = direction.filter(|d| d.x != 0.0) {
             movement_event_writer.write(MovementAction::Move(d));
         }
 
@@ -91,8 +94,24 @@ pub fn gamepad_movement_input(
 
 pub fn keyboard_attack_input(
     mut attack_event_writer: EventWriter<InputAttackEvent>,
+    mut attack_direction_writer: EventWriter<AttackDirection>,
+
     keyboard_input: Res<ButtonInput<KeyCode>>,
 ) {
+    // duplicate code i know, but because of dependencies/chaining, i wouldn't want to clean this up before knowing
+    // 100% that everything is alright.
+    let direction = {
+        let left = keyboard_input.pressed(KEYBOARD_LEFT);
+        let right = keyboard_input.pressed(KEYBOARD_RIGHT);
+        let up = keyboard_input.pressed(KEYBOARD_UP);
+        let down = keyboard_input.pressed(KEYBOARD_DOWN);
+        input_to_direction(left, right, up, down)
+    };
+
+    if let Some(d) = direction.filter(|d| d.x != 0.0) {
+        attack_direction_writer.write(AttackDirection(d));
+    }
+
     if keyboard_input.pressed(KEYBOARD_ATTACK) {
         attack_event_writer.write(InputAttackEvent);
     }
@@ -100,9 +119,35 @@ pub fn keyboard_attack_input(
 
 pub fn gamepad_attack_input(
     mut attack_event_writer: EventWriter<InputAttackEvent>,
+    mut attack_direction_writer: EventWriter<AttackDirection>,
     gamepads: Query<&Gamepad>,
 ) {
     for gamepad in gamepads.iter() {
+        let direction = {
+            let axis_direction = {
+                let left = gamepad.get(GamepadAxis::LeftStickX).unwrap_or(0.0);
+                let up = gamepad.get(GamepadAxis::LeftStickY).unwrap_or(0.0);
+
+                if left == 0.0 && up == 0.0 {
+                    None
+                } else {
+                    Some(Vec2::new(left, up).normalize_or_zero())
+                }
+            };
+            let button_direction = {
+                let left = gamepad.pressed(GamepadButton::DPadLeft);
+                let right = gamepad.pressed(GamepadButton::DPadRight);
+                let up = gamepad.pressed(GamepadButton::DPadUp);
+                let down = gamepad.pressed(GamepadButton::DPadDown);
+                input_to_direction(left, right, up, down)
+            };
+            button_direction.or(axis_direction)
+        };
+
+        if let Some(d) = direction.filter(|d| d.x != 0.0) {
+            attack_direction_writer.write(AttackDirection(d));
+        }
+
         if gamepad.pressed(GamepadButton::West) {
             attack_event_writer.write(InputAttackEvent);
         }

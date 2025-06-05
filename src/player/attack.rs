@@ -10,10 +10,15 @@ use super::{
 pub(super) fn plugin(app: &mut App) {
     app.add_event::<InputAttackEvent>();
     app.add_event::<DoAttackEvent>();
+    app.add_event::<AttackDirection>();
     app.add_systems(
         Update,
         (
-            (keyboard_attack_input, gamepad_attack_input),
+            (
+                keyboard_attack_input,
+                gamepad_attack_input,
+                player_attack_direction,
+            ),
             (attack_kickstart, attack_timer_handler, do_attack).chain(),
         )
             .chain(),
@@ -36,6 +41,9 @@ pub struct InputAttackEvent;
 
 #[derive(Event)]
 pub struct DoAttackEvent;
+
+#[derive(Event)]
+pub struct AttackDirection(pub Vec2);
 
 #[derive(Component)]
 pub struct Attack {
@@ -181,4 +189,13 @@ fn attack_timer_handler(
 
 fn do_attack(mut attack_event: EventReader<DoAttackEvent>) {
     for _ in attack_event.read() {}
+}
+
+fn player_attack_direction(
+    mut input_event: EventReader<AttackDirection>,
+    mut player: Single<&mut Player>,
+) {
+    for AttackDirection(direction) in input_event.read() {
+        player.attack_direction = *direction;
+    }
 }
