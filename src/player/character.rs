@@ -1,7 +1,7 @@
 use avian2d::prelude::*;
 use bevy::prelude::*;
 
-use crate::{asset_tracking::LoadResource, health::Health};
+use crate::{asset_tracking::LoadResource, health::Health, physics::creature::Grounded};
 
 use super::{
     configs::{CHARACTER_GRAVITY_SCALE, CHARACTER_HEALTH},
@@ -12,6 +12,8 @@ use super::{
 pub(super) fn plugin(app: &mut App) {
     app.register_type::<PlayerAssets>();
     app.load_resource::<PlayerAssets>();
+    app.add_systems(Update, player_fall_recovery);
+    app.add_systems(Update, reset_player_gravity_scale);
 }
 
 #[derive(Component)]
@@ -33,6 +35,30 @@ impl FromWorld for PlayerAssets {
             player: assets.load("images/player.png"),
             weapon: assets.load("images/weapon.png"),
         }
+    }
+}
+
+fn reset_player_gravity_scale(
+    mut player: Single<(&mut GravityScale, Has<Grounded>), With<Player>>,
+) {
+    let (gs, is_grounded) = &mut *player;
+
+    if *is_grounded {
+        gs.0 = CHARACTER_GRAVITY_SCALE;
+    }
+}
+
+fn player_fall_recovery(
+    mut player: Single<(&mut Transform, &mut LinearVelocity, &mut GravityScale), With<Player>>,
+) {
+    let (transform, lv, gs) = &mut *player;
+
+    if transform.translation.y < -1500.0 {
+        lv.y = 0.0;
+        gs.0 = 0.5;
+        // TODO: add a period of invulnerability
+        transform.translation.y = 300.0;
+        transform.translation.x = 0.0;
     }
 }
 
