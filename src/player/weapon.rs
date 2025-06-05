@@ -2,7 +2,7 @@ use bevy::{prelude::*, sprite::Anchor};
 
 use crate::{asset_tracking::LoadResource, player::attack::Attack};
 
-use super::{character::Player, movement::PlayerFaceDirection};
+use super::character::Player;
 
 pub(super) fn plugin(app: &mut App) {
     app.register_type::<WeaponAssets>();
@@ -110,18 +110,15 @@ pub fn weapon(player_assets: &WeaponAssets) -> impl Bundle {
     )
 }
 
+fn move_weapon_while_attack() {}
+
 fn move_weapon_while_idle(
     mut following: Single<&mut Transform, With<Weapon>>,
-    player: Option<
-        Single<
-            (&Transform, &PlayerFaceDirection),
-            (With<Player>, Without<Weapon>, Without<Attack>),
-        >,
-    >,
+    player: Option<Single<(&Transform, &Player), (Without<Weapon>, Without<Attack>)>>,
     time: Res<Time>,
 ) {
     if let Some(p) = player {
-        let (transform, face_direction) = *p;
+        let (transform, player) = *p;
         let delta_time = time.delta_secs();
         let Vec3 { x, y, z } = following.scale;
         let direction = if following.translation.x > transform.translation.x {
@@ -130,8 +127,8 @@ fn move_weapon_while_idle(
             -1.0
         };
         following.scale = Vec3::new(direction * x.abs(), y, z);
-        let target_translation =
-            &transform.translation + WEAPON_FOLLOW_OFFSET * (Vec3::new(-face_direction.0, 1., 1.));
+        let target_translation = &transform.translation
+            + WEAPON_FOLLOW_OFFSET * (Vec3::new(-player.face_direction.x, 1., 1.));
         following
             .translation
             .smooth_nudge(&target_translation, 2.0, delta_time);

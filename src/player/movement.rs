@@ -9,7 +9,7 @@ use bevy::prelude::*;
 
 use crate::{
     physics::creature::{CreaturePhysicsBundle, Flying, Grounded},
-    player::configs::DASH_COOLDOWN_DURATION_MILLISECONDS,
+    player::{character::Player, configs::DASH_COOLDOWN_DURATION_MILLISECONDS},
 };
 
 use super::{
@@ -46,7 +46,7 @@ pub(super) fn plugin(app: &mut App) {
 /// An event sent for a movement input action.
 #[derive(Event)]
 pub enum MovementAction {
-    Move(Scalar),
+    Move(Vec2),
     JumpStart,
     JumpEnd,
     Dash,
@@ -111,12 +111,6 @@ pub struct MovementSpeed(Scalar);
 #[reflect(Component)]
 pub struct JumpImpulse(Scalar);
 
-/// The direction the player is facing.
-// this should really go in player
-#[derive(Component, Reflect)]
-#[reflect(Component)]
-pub struct PlayerFaceDirection(pub Scalar);
-
 /// A bundle that contains the components needed for a basic
 /// kinematic character controller.
 #[derive(Bundle)]
@@ -134,7 +128,6 @@ pub struct CharacterControllerBundle {
 pub struct MovementBundle {
     desired_speed: MovementSpeed,
     jump_impulse: JumpImpulse,
-    player_face_direction: PlayerFaceDirection,
     physics: CreaturePhysicsBundle,
 }
 
@@ -149,7 +142,6 @@ impl MovementBundle {
             desired_speed: MovementSpeed(acceleration),
             jump_impulse: JumpImpulse(jump_impulse),
             physics: CreaturePhysicsBundle::new(damping, max_slope_angle),
-            player_face_direction: PlayerFaceDirection(1.0),
         }
     }
 }
@@ -187,7 +179,7 @@ fn movement(
         Entity,
         &MovementSpeed,
         &JumpImpulse,
-        &mut PlayerFaceDirection,
+        &mut Player,
         &mut LinearVelocity,
         Has<Grounded>,
         Has<Dashing>,
@@ -204,7 +196,7 @@ fn movement(
             entity,
             movement_speed,
             jump_impulse,
-            mut player_direction,
+            mut player,
             mut linear_velocity,
             is_grounded,
             is_dashing,
@@ -217,8 +209,8 @@ fn movement(
                     if is_dashing {
                         continue;
                     }
-                    player_direction.0 = *direction;
-                    let desired_speed = *direction * movement_speed.0 - linear_velocity.x;
+                    player.face_direction = *direction;
+                    let desired_speed = direction.x * movement_speed.0 - linear_velocity.x;
                     linear_velocity.x += desired_speed * 10. * delta_time;
                 }
                 MovementAction::JumpStart => {
@@ -250,8 +242,10 @@ fn movement(
                         .entity(entity)
                         .insert(Dashing::new(DASH_DURATION_MILLISECONDS))
                         .insert(Flying);
-                    linear_velocity.x =
-                        player_direction.0 * movement_speed.0 * DASH_SPEED_MODIFIER * delta_time;
+                    linear_velocity.x = player.face_direction.x
+                        * movement_speed.0
+                        * DASH_SPEED_MODIFIER
+                        * delta_time;
                     linear_velocity.y = 0.0;
                     gravity.0 = 0.0;
                 }
