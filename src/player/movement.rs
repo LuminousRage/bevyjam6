@@ -7,7 +7,10 @@ use std::time::Duration;
 use avian2d::{math::*, prelude::*};
 use bevy::prelude::*;
 
-use crate::physics::creature::{CreaturePhysicsBundle, Flying, Grounded};
+use crate::{
+    physics::creature::{CreaturePhysicsBundle, Flying, Grounded},
+    player::configs::DASH_COOLDOWN_DURATION_MILLISECONDS,
+};
 
 use super::{
     configs::{
@@ -64,7 +67,10 @@ impl Dashing {
     fn new(duration: u64) -> Dashing {
         Self {
             duration: Timer::new(Duration::from_millis(duration), TimerMode::Once),
-            cooldown: Timer::new(Duration::from_millis(duration + 100), TimerMode::Once),
+            cooldown: Timer::new(
+                Duration::from_millis(duration + DASH_COOLDOWN_DURATION_MILLISECONDS),
+                TimerMode::Once,
+            ),
         }
     }
 }
