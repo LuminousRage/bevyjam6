@@ -2,7 +2,7 @@ use avian2d::prelude::*;
 use bevy::prelude::*;
 
 use crate::{
-    enemy::imp::{ImpAssets, imp},
+    enemy::slime::{SlimeAssets, slime},
     player::character::{PlayerAssets, player},
     player::weapon::{WeaponAssets, weapon},
     screens::Screen,
@@ -12,8 +12,8 @@ use crate::{
 pub fn spawn_level(
     mut commands: Commands,
     player_assets: Res<PlayerAssets>,
-    imp_assets: Res<ImpAssets>,
     weapon_assets: Res<WeaponAssets>,
+    slime_assets: Res<SlimeAssets>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
@@ -28,7 +28,10 @@ pub fn spawn_level(
         ],
     ));
 
-    commands.spawn(imp(&imp_assets, Vec3::new(200.0, 2000.0, 0.0)));
+    let slime = || slime(&slime_assets, Vec3::new(200.0, 2000.0, 0.0));
+
+    commands.spawn(slime());
+    commands.spawn(slime());
 
     commands.spawn((
         Name::new("Obj"),

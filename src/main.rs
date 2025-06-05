@@ -6,6 +6,7 @@
 mod asset_tracking;
 mod audio;
 mod camera;
+mod collision_layers;
 #[cfg(feature = "dev")]
 mod dev_tools;
 mod enemy;

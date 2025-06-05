@@ -1,6 +1,10 @@
+use avian2d::prelude::Collider;
 use bevy::{prelude::*, sprite::Anchor};
 
-use crate::{asset_tracking::LoadResource, player::attack::Attack};
+use crate::{
+    asset_tracking::LoadResource, collision_layers::player_hit_boxes, health::hitbox_prefab,
+    player::attack::Attack,
+};
 
 use super::{character::Player, movement::PlayerFaceDirection};
 
@@ -75,7 +79,13 @@ pub fn weapon(player_assets: &WeaponAssets) -> impl Bundle {
                     image: player_assets.weapon_head.clone(),
                     anchor: Anchor::BottomCenter,
                     ..default()
-                }
+                },
+                children![hitbox_prefab(
+                    Collider::circle(30.0),
+                    player_hit_boxes(),
+                    0.5,
+                    10.0
+                )]
             )
         ],
     )
