@@ -198,8 +198,6 @@ fn player_attack_direction(
     mut player: Single<(&mut Player, Has<Grounded>)>,
 ) {
     let (p, is_grounded) = &mut *player;
-    // Reset to face direction if no input event
-    p.attack_direction = Vec2::new(p.face_direction.x, 0.0);
 
     // note: this is only a vec2 because maybe we want diagonal attacks, but i lowkey regret making it like this now
     for AttackDirection(direction) in input_event.read() {
