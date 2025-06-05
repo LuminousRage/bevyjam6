@@ -1,23 +1,27 @@
 use avian2d::prelude::Collider;
-use bevy::{prelude::*, sprite::Anchor};
+use std::f32::consts::PI;
+
+use bevy::{prelude::*, sprite::Anchor, text::cosmic_text::rustybuzz::script::YI};
 
 use crate::{
     asset_tracking::LoadResource, collision_layers::player_hit_boxes, health::hitbox_prefab,
     player::attack::Attack,
 };
 
-use super::{character::Player, movement::PlayerFaceDirection};
+use super::character::Player;
 
 pub(super) fn plugin(app: &mut App) {
     app.register_type::<WeaponAssets>();
     app.load_resource::<WeaponAssets>();
-    app.add_systems(Update, move_weapon_while_idle);
+    app.add_systems(Update, (move_weapon, update_weapon_length));
 }
 
 // offset in pixels to line up the weapon
 const OFFSET_FROM_BASE: u64 = 898;
 const OFFSET_FROM_EXTEND: u64 = 178;
+const EXTEND_SIZE: u64 = 595;
 const WEAPON_FOLLOW_OFFSET: Vec3 = Vec3::new(45.0, -35.0, -1.0);
+const WEAPON_ATTACK_HORIZONTAL_OFFSET: Vec3 = Vec3::new(-70.0, -35.0, -1.0);
 
 #[derive(Component)]
 pub struct Weapon;
@@ -42,7 +46,35 @@ impl FromWorld for WeaponAssets {
     }
 }
 
-fn update_weapon_length(mut weapon: Single<(&Children), With<Weapon>>) {}
+fn update_weapon_length(
+    attack: Option<Single<&Attack>>,
+    mut children: Query<(&Name, &mut Transform), With<Sprite>>,
+) {
+    let extend_scale = if let Some(attack) = attack {
+        attack.extend_scale
+    } else {
+        1.0
+    };
+
+    for (name, mut transform) in children.iter_mut() {
+        match name.as_str() {
+            "Weapon Base" => {
+                transform.translation.y = 0.0;
+            }
+            "Weapon Extend" => {
+                transform.translation.y = (OFFSET_FROM_BASE) as f32;
+                transform.scale.y = extend_scale;
+            }
+            "Weapon Head" => {
+                let extend_translation =
+                    extend_scale * EXTEND_SIZE as f32 - (EXTEND_SIZE - OFFSET_FROM_EXTEND) as f32;
+
+                transform.translation.y = OFFSET_FROM_BASE as f32 + extend_translation - 1.0;
+            }
+            _ => {}
+        }
+    }
+}
 
 pub fn weapon(player_assets: &WeaponAssets) -> impl Bundle {
     (
@@ -55,7 +87,7 @@ pub fn weapon(player_assets: &WeaponAssets) -> impl Bundle {
         Visibility::default(),
         children![
             (
-                Name::new("Base"),
+                Name::new("Weapon Base"),
                 Transform::from_xyz(0.0, 0.0, 0.0),
                 Sprite {
                     image: player_assets.weapon_base.clone(),
@@ -64,7 +96,7 @@ pub fn weapon(player_assets: &WeaponAssets) -> impl Bundle {
                 }
             ),
             (
-                Name::new("Extend"),
+                Name::new("Weapon Extend"),
                 Transform::from_xyz(0.0, OFFSET_FROM_BASE as f32, 0.0),
                 Sprite {
                     image: player_assets.weapon_extend.clone(),
@@ -73,7 +105,7 @@ pub fn weapon(player_assets: &WeaponAssets) -> impl Bundle {
                 }
             ),
             (
-                Name::new("Head"),
+                Name::new("Weapon Head"),
                 Transform::from_xyz(0.0, (OFFSET_FROM_EXTEND + OFFSET_FROM_BASE) as f32, 0.0),
                 Sprite {
                     image: player_assets.weapon_head.clone(),
@@ -91,30 +123,47 @@ pub fn weapon(player_assets: &WeaponAssets) -> impl Bundle {
     )
 }
 
-fn move_weapon_while_idle(
+fn move_weapon(
     mut following: Single<&mut Transform, With<Weapon>>,
-    player: Option<
-        Single<
-            (&Transform, &PlayerFaceDirection),
-            (With<Player>, Without<Weapon>, Without<Attack>),
-        >,
+    player_without_attack: Option<
+        Single<(&Transform, &Player), (Without<Weapon>, Without<Attack>)>,
     >,
+    player_with_attack: Option<Single<(&Transform, &Player, &Attack), Without<Weapon>>>,
+
     time: Res<Time>,
 ) {
-    if let Some(p) = player {
-        let (transform, face_direction) = *p;
-        let delta_time = time.delta_secs();
-        let Vec3 { x, y, z } = following.scale;
-        let direction = if following.translation.x > transform.translation.x {
-            1.0
-        } else {
-            -1.0
+    let delta_time = time.delta_secs();
+
+    if let Some(p) = player_without_attack {
+        let (transform, player) = *p;
+
+        following.scale = {
+            let Vec3 { x, y, z } = following.scale;
+            let direction = if following.translation.x > transform.translation.x {
+                1.0
+            } else {
+                -1.0
+            };
+            Vec3::new(direction * x.abs(), y, z)
         };
-        following.scale = Vec3::new(direction * x.abs(), y, z);
-        let target_translation =
-            &transform.translation + WEAPON_FOLLOW_OFFSET * (Vec3::new(-face_direction.0, 1., 1.));
+        following.rotation = Quat::default();
+
+        let target_translation = &transform.translation
+            + WEAPON_FOLLOW_OFFSET * (Vec3::new(-player.face_direction.x, 1., 1.));
         following
             .translation
             .smooth_nudge(&target_translation, 2.0, delta_time);
+    }
+
+    if let Some(p) = player_with_attack {
+        let (transform, player, attack) = *p;
+        let target_translation = &transform.translation
+            + WEAPON_ATTACK_HORIZONTAL_OFFSET
+                * (player.attack_direction * Vec2::new(1.0, 1.0)).extend(1.0);
+
+        following.rotation = Quat::from_rotation_z(Vec2::Y.angle_to(player.attack_direction));
+        following
+            .translation
+            .smooth_nudge(&target_translation, 5.0, delta_time);
     }
 }

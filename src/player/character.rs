@@ -21,7 +21,10 @@ pub(super) fn plugin(app: &mut App) {
 }
 
 #[derive(Component)]
-pub struct Player;
+pub struct Player {
+    pub face_direction: Vec2,
+    pub attack_direction: Vec2,
+}
 
 #[derive(Resource, Asset, Clone, Reflect)]
 #[reflect(Resource)]
@@ -71,7 +74,10 @@ pub fn player(
     (
         Name::new("Player"),
         Transform::from_scale(Vec2::splat(0.5).extend(1.0)),
-        Player,
+        Player {
+            face_direction: Vec2::X,
+            attack_direction: Vec2::X,
+        },
         // Sprite {
         //     image: player_assets.player.clone(),
         //     ..default()
