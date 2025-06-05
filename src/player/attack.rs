@@ -14,13 +14,13 @@ pub(super) fn plugin(app: &mut App) {
         Update,
         (
             (keyboard_attack_input, gamepad_attack_input),
-            (attack_kickstart, attack_timer_handler).chain(),
+            (attack_kickstart, attack_timer_handler, do_attack).chain(),
         )
             .chain(),
     );
 }
 
-const INITIAL_ATTACK_COOLDOWN_MILLISECONDS: u64 = 1000;
+const INITIAL_ATTACK_COOLDOWN_MILLISECONDS: u64 = 2000;
 const MINIMUM_ATTACK_COOLDOWN_MILLISECONDS: u64 = 100;
 const ATTACK_PERIOD_MILLISECONDS: u64 = 200;
 
@@ -92,6 +92,7 @@ impl Attack {
 fn attack_kickstart(
     mut commands: Commands,
     mut input_event: EventReader<InputAttackEvent>,
+    mut attack_event: EventWriter<DoAttackEvent>,
     player: Single<Entity, (With<Player>, Without<Attack>)>,
 ) {
     // Consume events so we don't block. but also we don't really care how many events get triggered
@@ -102,6 +103,8 @@ fn attack_kickstart(
 
     if has_attack_input {
         commands.entity(*player).insert(Attack::default());
+        attack_event.write(DoAttackEvent);
+        // handle weapon size
     }
 }
 
@@ -155,4 +158,8 @@ fn attack_timer_handler(
             // handle weapon size
         }
     }
+}
+
+fn do_attack(mut attack_event: EventReader<DoAttackEvent>) {
+    for _ in attack_event.read() {}
 }
