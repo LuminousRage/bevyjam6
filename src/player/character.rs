@@ -6,7 +6,6 @@ use crate::{asset_tracking::LoadResource, health::Health, physics::creature::Gro
 use super::{
     configs::{CHARACTER_GRAVITY_SCALE, CHARACTER_HEALTH},
     movement::CharacterControllerBundle,
-    weapon::weapon,
 };
 
 pub(super) fn plugin(app: &mut App) {
@@ -24,8 +23,6 @@ pub struct Player;
 pub struct PlayerAssets {
     #[dependency]
     pub player: Handle<Image>,
-    #[dependency]
-    pub weapon: Handle<Image>,
 }
 
 impl FromWorld for PlayerAssets {
@@ -33,7 +30,6 @@ impl FromWorld for PlayerAssets {
         let assets = world.resource::<AssetServer>();
         Self {
             player: assets.load("images/player.png"),
-            weapon: assets.load("images/weapon.png"),
         }
     }
 }

@@ -4,7 +4,7 @@ use bevy::prelude::*;
 use crate::{
     player::{
         character::{PlayerAssets, player},
-        weapon::weapon,
+        weapon::{WeaponAssets, weapon},
     },
     screens::Screen,
 };
@@ -13,6 +13,7 @@ use crate::{
 pub fn spawn_level(
     mut commands: Commands,
     player_assets: Res<PlayerAssets>,
+    weapon_assets: Res<WeaponAssets>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
@@ -23,7 +24,7 @@ pub fn spawn_level(
         StateScoped(Screen::Gameplay),
         children![
             player(&player_assets, &mut meshes, &mut materials),
-            weapon(&player_assets, &mut meshes, &mut materials)
+            weapon(&weapon_assets)
         ],
     ));
 

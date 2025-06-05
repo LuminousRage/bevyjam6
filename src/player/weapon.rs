@@ -1,36 +1,85 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, sprite::Anchor};
 
-use super::{
-    character::{Player, PlayerAssets},
-    movement::PlayerFaceDirection,
-};
+use crate::asset_tracking::LoadResource;
+
+use super::{character::Player, movement::PlayerFaceDirection};
 
 pub(super) fn plugin(app: &mut App) {
+    app.register_type::<WeaponAssets>();
+    app.load_resource::<WeaponAssets>();
     app.add_systems(Update, move_weapon);
 }
+
+// offset in pixels to line up the weapon
+const OFFSET_FROM_BASE: u64 = 898;
+const OFFSET_FROM_EXTEND: u64 = 178;
+const WEAPON_FOLLOW_OFFSET: Vec3 = Vec3::new(45.0, -40.0, -1.0);
 
 #[derive(Component)]
 pub struct Weapon;
 
-pub fn weapon(
-    player_assets: &PlayerAssets,
-    meshes: &mut Assets<Mesh>,
-    materials: &mut Assets<ColorMaterial>,
-) -> impl Bundle {
+#[derive(Resource, Asset, Clone, Reflect)]
+#[reflect(Resource)]
+pub struct WeaponAssets {
+    #[dependency]
+    pub weapon_base: Handle<Image>,
+    pub weapon_extend: Handle<Image>,
+    pub weapon_head: Handle<Image>,
+}
+
+impl FromWorld for WeaponAssets {
+    fn from_world(world: &mut World) -> Self {
+        let assets = world.resource::<AssetServer>();
+        Self {
+            weapon_base: assets.load("images/weapon_base.png"),
+            weapon_extend: assets.load("images/weapon_extend.png"),
+            weapon_head: assets.load("images/weapon_head.png"),
+        }
+    }
+}
+
+// fn calculate_weapon_position() -> (f32, f32) {
+//     // let extend be at the centre, although we might want to change this later
+//     //
+// }
+
+pub fn weapon(player_assets: &WeaponAssets) -> impl Bundle {
     (
         Name::new("Weapon"),
         Weapon,
         Transform {
             scale: Vec2::splat(0.055).extend(1.0),
-            // translation: Vec3::new(85.0, 120.0, -1.0),
             ..default()
         },
-        // Mesh2d(meshes.add(Circle::new(10.0))),
-        // MeshMaterial2d(materials.add(Color::srgb(0.9, 0.2, 0.2))),
-        Sprite {
-            image: player_assets.weapon.clone(),
-            ..default()
-        },
+        children![
+            (
+                Name::new("Base"),
+                Transform::from_xyz(0.0, 0.0, 0.0),
+                Sprite {
+                    image: player_assets.weapon_base.clone(),
+                    anchor: Anchor::BottomCenter,
+                    ..default()
+                }
+            ),
+            (
+                Name::new("Extend"),
+                Transform::from_xyz(0.0, OFFSET_FROM_BASE as f32, 0.0),
+                Sprite {
+                    image: player_assets.weapon_extend.clone(),
+                    anchor: Anchor::BottomCenter,
+                    ..default()
+                }
+            ),
+            (
+                Name::new("Head"),
+                Transform::from_xyz(0.0, (OFFSET_FROM_EXTEND + OFFSET_FROM_BASE) as f32, 0.0),
+                Sprite {
+                    image: player_assets.weapon_head.clone(),
+                    anchor: Anchor::BottomCenter,
+                    ..default()
+                }
+            )
+        ],
     )
 }
 
@@ -49,7 +98,7 @@ fn move_weapon(
     };
     following.scale = Vec3::new(direction * x.abs(), y, z);
     let target_translation =
-        &transform.translation + Vec3::new(45.0 * -face_direction.0, 55.0, -1.0);
+        &transform.translation + WEAPON_FOLLOW_OFFSET * (Vec3::new(-face_direction.0, 1., 1.));
     following
         .translation
         .smooth_nudge(&target_translation, 2.0, delta_time);
