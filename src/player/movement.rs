@@ -2,31 +2,45 @@
 //! Heavily referencing (aka plagiarising/copying)
 //! https://github.com/Jondolf/avian/blob/main/crates/avian2d/examples/dynamic_character_2d/plugin.rs
 
+use std::time::Duration;
+
 use avian2d::{math::*, prelude::*};
 use bevy::prelude::*;
 
-use crate::physics::creature::{CreaturePhysicsBundle, Flying, Grounded};
+use crate::{
+    physics::creature::{CreaturePhysicsBundle, Flying, Grounded},
+    player::configs::DASH_COOLDOWN_DURATION_MILLISECONDS,
+};
 
-use super::configs::{
-    CHARACTER_GRAVITY_SCALE, DASH_DURATION_SECONDS, DASH_SPEED_MODIFIER, JUMP_DURATION_SECONDS,
-    JUMP_IMPULSE, MAX_SLOPE_ANGLE, MOVEMENT_ACCELERATION, MOVEMENT_DAMPING,
+use super::{
+    configs::{
+        CHARACTER_GRAVITY_SCALE, DASH_DURATION_MILLISECONDS, DASH_SPEED_MODIFIER,
+        JUMP_DURATION_MILLISECONDS, JUMP_IMPULSE, MAX_SLOPE_ANGLE, MOVEMENT_DAMPING,
+        MOVEMENT_SPEED,
+    },
+    input::{gamepad_movement_input, keyboard_movement_input},
 };
 
 pub(super) fn plugin(app: &mut App) {
     app.add_event::<MovementAction>().add_systems(
         Update,
         (
-            keyboard_input,
-            gamepad_input,
-            detect_coyote_time_start,
-            handle_coyote_time,
+            (
+                (
+                    keyboard_movement_input,
+                    gamepad_movement_input,
+                    detect_coyote_time_start,
+                    handle_coyote_time,
+                ),
+                movement,
+            )
+                .chain(),
             handle_dashing,
             handle_jump_end,
-            movement,
         ),
     );
     app.register_type::<JumpImpulse>()
-        .register_type::<MovementAcceleration>();
+        .register_type::<MovementSpeed>();
 }
 
 /// An event sent for a movement input action.
@@ -44,20 +58,53 @@ pub struct CharacterController;
 
 #[derive(Component)]
 #[component(storage = "SparseSet")]
-pub struct Dashing(f32);
+pub struct Dashing {
+    duration: Timer,
+    cooldown: Timer,
+}
+
+impl Dashing {
+    fn new(duration: u64) -> Dashing {
+        Self {
+            duration: Timer::new(Duration::from_millis(duration), TimerMode::Once),
+            cooldown: Timer::new(
+                Duration::from_millis(duration + DASH_COOLDOWN_DURATION_MILLISECONDS),
+                TimerMode::Once,
+            ),
+        }
+    }
+}
 
 #[derive(Component)]
 #[component(storage = "SparseSet")]
-pub struct Jumping(f32);
+pub struct Jumping {
+    duration: Timer,
+    cooldown: Timer,
+}
+
+impl Jumping {
+    fn new(duration: u64) -> Jumping {
+        Self {
+            duration: Timer::new(Duration::from_millis(duration), TimerMode::Once),
+            cooldown: Timer::new(Duration::from_millis(100), TimerMode::Once),
+        }
+    }
+}
 
 #[derive(Component)]
 #[component(storage = "SparseSet")]
-pub struct Coyote(f32);
+pub struct Coyote(Timer);
 
-/// The acceleration used for character movement.
+impl Coyote {
+    fn new(duration: u64) -> Coyote {
+        Self(Timer::new(Duration::from_millis(duration), TimerMode::Once))
+    }
+}
+
+/// The desired movement speed of the character.
 #[derive(Component, Reflect)]
 #[reflect(Component)]
-pub struct MovementAcceleration(Scalar);
+pub struct MovementSpeed(Scalar);
 
 /// The strength of a jump.
 #[derive(Component, Reflect)]
@@ -65,9 +112,10 @@ pub struct MovementAcceleration(Scalar);
 pub struct JumpImpulse(Scalar);
 
 /// The direction the player is facing.
+// this should really go in player
 #[derive(Component, Reflect)]
 #[reflect(Component)]
-pub struct PlayerFaceDirection(Scalar);
+pub struct PlayerFaceDirection(pub Scalar);
 
 /// A bundle that contains the components needed for a basic
 /// kinematic character controller.
@@ -84,7 +132,7 @@ pub struct CharacterControllerBundle {
 /// A bundle that contains components for character movement.
 #[derive(Bundle, Reflect)]
 pub struct MovementBundle {
-    acceleration: MovementAcceleration,
+    desired_speed: MovementSpeed,
     jump_impulse: JumpImpulse,
     player_face_direction: PlayerFaceDirection,
     physics: CreaturePhysicsBundle,
@@ -98,7 +146,7 @@ impl MovementBundle {
         max_slope_angle: Scalar,
     ) -> Self {
         Self {
-            acceleration: MovementAcceleration(acceleration),
+            desired_speed: MovementSpeed(acceleration),
             jump_impulse: JumpImpulse(jump_impulse),
             physics: CreaturePhysicsBundle::new(damping, max_slope_angle),
             player_face_direction: PlayerFaceDirection(1.0),
@@ -120,54 +168,11 @@ impl CharacterControllerBundle {
                 .with_max_distance(10.0),
             locked_axes: LockedAxes::ROTATION_LOCKED,
             movement: MovementBundle::new(
-                MOVEMENT_ACCELERATION,
+                MOVEMENT_SPEED,
                 MOVEMENT_DAMPING,
                 JUMP_IMPULSE,
                 MAX_SLOPE_ANGLE,
             ),
-        }
-    }
-}
-
-/// Sends [`MovementAction`] events based on keyboard input.
-fn keyboard_input(
-    mut movement_event_writer: EventWriter<MovementAction>,
-    keyboard_input: Res<ButtonInput<KeyCode>>,
-) {
-    let left = keyboard_input.any_pressed([KeyCode::ArrowLeft]);
-    let right = keyboard_input.any_pressed([KeyCode::ArrowRight]);
-
-    let horizontal = right as i8 - left as i8;
-    let direction = horizontal as Scalar;
-
-    if direction != 0.0 {
-        movement_event_writer.write(MovementAction::Move(direction));
-    }
-
-    if keyboard_input.just_pressed(KeyCode::KeyZ) {
-        movement_event_writer.write(MovementAction::JumpStart);
-    }
-    if keyboard_input.just_released(KeyCode::KeyZ) {
-        movement_event_writer.write(MovementAction::JumpEnd);
-    }
-
-    if keyboard_input.just_pressed(KeyCode::KeyC) {
-        movement_event_writer.write(MovementAction::Dash);
-    }
-}
-
-/// Sends [`MovementAction`] events based on gamepad input.
-fn gamepad_input(
-    mut movement_event_writer: EventWriter<MovementAction>,
-    gamepads: Query<&Gamepad>,
-) {
-    for gamepad in gamepads.iter() {
-        if let Some(x) = gamepad.get(GamepadAxis::LeftStickX) {
-            movement_event_writer.write(MovementAction::Move(x as Scalar));
-        }
-
-        if gamepad.just_pressed(GamepadButton::South) {
-            movement_event_writer.write(MovementAction::JumpStart);
         }
     }
 }
@@ -180,7 +185,7 @@ fn movement(
     mut movement_event_reader: EventReader<MovementAction>,
     mut controllers: Query<(
         Entity,
-        &MovementAcceleration,
+        &MovementSpeed,
         &JumpImpulse,
         &mut PlayerFaceDirection,
         &mut LinearVelocity,
@@ -197,7 +202,7 @@ fn movement(
     for event in movement_event_reader.read() {
         for (
             entity,
-            movement_acceleration,
+            movement_speed,
             jump_impulse,
             mut player_direction,
             mut linear_velocity,
@@ -213,24 +218,27 @@ fn movement(
                         continue;
                     }
                     player_direction.0 = *direction;
-
-                    linear_velocity.x += *direction * movement_acceleration.0 * delta_time;
+                    let desired_speed = *direction * movement_speed.0 - linear_velocity.x;
+                    linear_velocity.x += desired_speed * 10. * delta_time;
                 }
                 MovementAction::JumpStart => {
                     if is_grounded || is_coyote {
+                        commands.entity(entity).remove::<Grounded>();
+                        commands.entity(entity).remove::<Coyote>();
+
                         commands
                             .entity(entity)
-                            .insert(Jumping(JUMP_DURATION_SECONDS));
+                            .insert(Jumping::new(JUMP_DURATION_MILLISECONDS));
                         linear_velocity.y += jump_impulse.0;
-                        gravity.0 = 1.0;
+                        gravity.0 = 0.5;
                     }
                 }
                 MovementAction::JumpEnd => {
                     // is in air and is going up
-                    commands.entity(entity).remove::<Jumping>();
                     if !is_grounded && linear_velocity.y > 0.0 {
+                        commands.entity(entity).remove::<Jumping>();
                         gravity.0 = CHARACTER_GRAVITY_SCALE;
-                        linear_velocity.y *= 0.2;
+                        linear_velocity.y *= 0.5;
                     }
                 }
                 //TODO:only one dash in air, reset when grounded
@@ -241,12 +249,10 @@ fn movement(
                     }
                     commands
                         .entity(entity)
-                        .insert(Dashing(DASH_DURATION_SECONDS))
+                        .insert(Dashing::new(DASH_DURATION_MILLISECONDS))
                         .insert(Flying);
-                    linear_velocity.x = player_direction.0
-                        * movement_acceleration.0
-                        * DASH_SPEED_MODIFIER
-                        * delta_time;
+                    linear_velocity.x =
+                        player_direction.0 * movement_speed.0 * DASH_SPEED_MODIFIER * delta_time;
                     linear_velocity.y = 0.0;
                     gravity.0 = 0.0;
                 }
@@ -256,11 +262,19 @@ fn movement(
 }
 
 pub fn detect_coyote_time_start(
-    query: Query<Entity, (With<CharacterController>, With<Grounded>, Without<Coyote>)>,
+    query: Query<
+        Entity,
+        (
+            With<CharacterController>,
+            With<Grounded>,
+            Without<Coyote>,
+            Without<Jumping>,
+        ),
+    >,
     mut commands: Commands,
 ) {
     for entity in query {
-        commands.entity(entity).insert(Coyote(0.2));
+        commands.entity(entity).insert(Coyote::new(200));
     }
 }
 
@@ -269,12 +283,11 @@ fn handle_coyote_time(
     mut commands: Commands,
     mut query: Query<(Entity, &mut Coyote), Without<Grounded>>,
 ) {
-    let delta_time = time.delta_secs_f64().adjust_precision();
     for (entity, mut coyote) in &mut query {
-        if coyote.0 <= 0.0 {
+        coyote.0.tick(time.delta());
+
+        if coyote.0.finished() {
             commands.entity(entity).remove::<Coyote>();
-        } else {
-            coyote.0 -= delta_time;
         }
     }
 }
@@ -284,15 +297,13 @@ fn handle_jump_end(
     mut commands: Commands,
     mut query: Query<(Entity, &mut Jumping, &mut GravityScale, &mut LinearVelocity)>,
 ) {
-    let delta_time = time.delta_secs_f64().adjust_precision();
-
     for (entity, mut jumping, mut gravity_scale, mut linear_velocity) in &mut query {
-        if jumping.0 <= 0.0 {
+        jumping.duration.tick(time.delta());
+
+        if jumping.duration.just_finished() {
             commands.entity(entity).remove::<Jumping>();
             gravity_scale.0 = CHARACTER_GRAVITY_SCALE;
-            linear_velocity.y *= 0.2;
-        } else {
-            jumping.0 -= delta_time;
+            linear_velocity.y *= 0.5;
         }
     }
 }
@@ -301,20 +312,26 @@ fn handle_jump_end(
 fn handle_dashing(
     time: Res<Time>,
     mut commands: Commands,
-    mut query: Query<(Entity, &mut Dashing, &mut GravityScale, &mut LinearVelocity)>,
+    mut query: Query<(
+        Entity,
+        &mut Dashing,
+        &mut GravityScale,
+        &mut LinearVelocity,
+        Has<Grounded>,
+    )>,
 ) {
-    let delta_time = time.delta_secs_f64().adjust_precision();
+    for (entity, mut dashing, mut gravity_scale, mut linear_velocity, is_grounded) in &mut query {
+        dashing.duration.tick(time.delta());
+        dashing.cooldown.tick(time.delta());
 
-    for (entity, mut dashing, mut gravity_scale, mut linear_velocity) in &mut query {
-        if dashing.0 <= 0.0 {
-            commands
-                .entity(entity)
-                .remove::<Dashing>()
-                .remove::<Flying>();
+        if dashing.duration.just_finished() {
+            commands.entity(entity).remove::<Flying>();
             gravity_scale.0 = CHARACTER_GRAVITY_SCALE;
             linear_velocity.x *= 0.4;
-        } else {
-            dashing.0 -= delta_time;
+        }
+
+        if dashing.cooldown.finished() && is_grounded {
+            commands.entity(entity).remove::<Dashing>();
         }
     }
 }

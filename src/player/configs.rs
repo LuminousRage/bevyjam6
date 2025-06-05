@@ -1,12 +1,22 @@
 use avian2d::math::Scalar;
+use bevy::input::keyboard::KeyCode;
 
-pub const MOVEMENT_ACCELERATION: f32 = 5000.0;
-pub const DASH_SPEED_MODIFIER: f32 = 20.0;
-pub const JUMP_IMPULSE: f32 = 1100.0;
+pub const MOVEMENT_SPEED: f32 = 500.0;
+pub const DASH_SPEED_MODIFIER: f32 = 80.;
+pub const JUMP_IMPULSE: f32 = 1000.0;
 pub const MOVEMENT_DAMPING: f32 = 6.0;
 pub const MAX_SLOPE_ANGLE: f32 = (30.0 as Scalar).to_radians();
 pub const CHARACTER_GRAVITY_SCALE: f32 = 1.5;
-pub const DASH_DURATION_SECONDS: f32 = 0.2;
-pub const JUMP_DURATION_SECONDS: f32 = 0.5;
+pub const DASH_DURATION_MILLISECONDS: u64 = 200;
+pub const JUMP_DURATION_MILLISECONDS: u64 = 400;
+pub const DASH_COOLDOWN_DURATION_MILLISECONDS: u64 = 300;
 
 pub const CHARACTER_HEALTH: f32 = 100.0;
+
+pub const KEYBOARD_LEFT: KeyCode = KeyCode::ArrowLeft;
+pub const KEYBOARD_RIGHT: KeyCode = KeyCode::ArrowRight;
+pub const KEYBOARD_DOWN: KeyCode = KeyCode::ArrowDown;
+pub const KEYBOARD_UP: KeyCode = KeyCode::ArrowUp;
+pub const KEYBOARD_JUMP: KeyCode = KeyCode::KeyZ;
+pub const KEYBOARD_ATTACK: KeyCode = KeyCode::KeyX;
+pub const KEYBOARD_DASH: KeyCode = KeyCode::KeyC;

@@ -4,6 +4,7 @@ use bevy::prelude::*;
 use crate::{
     enemy::imp::{ImpAssets, imp},
     player::character::{PlayerAssets, player},
+    player::weapon::{WeaponAssets, weapon},
     screens::Screen,
 };
 
@@ -12,6 +13,7 @@ pub fn spawn_level(
     mut commands: Commands,
     player_assets: Res<PlayerAssets>,
     imp_assets: Res<ImpAssets>,
+    weapon_assets: Res<WeaponAssets>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
@@ -20,7 +22,10 @@ pub fn spawn_level(
         Transform::default(),
         Visibility::default(),
         StateScoped(Screen::Gameplay),
-        children![player(&player_assets),],
+        children![
+            player(&player_assets, &mut meshes, &mut materials),
+            weapon(&weapon_assets)
+        ],
     ));
 
     commands.spawn(imp(&imp_assets, Vec3::new(200.0, 2000.0, 0.0)));
