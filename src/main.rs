@@ -53,11 +53,14 @@ impl Plugin for AppPlugin {
                     ..default()
                 }),
         );
-
+        app.add_plugins((
+            asset_tracking::plugin,
+            PhysicsPlugins::default(),
+            physics::plugin,
+            PhysicsDebugPlugin::default(),
+        ));
         // Add other plugins.
         app.add_plugins((
-            PhysicsPlugins::default(),
-            asset_tracking::plugin,
             audio::plugin,
             #[cfg(feature = "dev")]
             dev_tools::plugin,

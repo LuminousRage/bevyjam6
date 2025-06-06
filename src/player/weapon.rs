@@ -81,7 +81,7 @@ pub fn weapon(player_assets: &WeaponAssets) -> impl Bundle {
         Name::new("Weapon"),
         Weapon,
         Transform {
-            scale: Vec2::splat(0.055).extend(1.0),
+            scale: Vec2::splat(0.050).extend(1.0),
             ..default()
         },
         Visibility::default(),
