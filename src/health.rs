@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use avian2d::{
     math::AdjustPrecision,
-    prelude::{Collider, CollidingEntities, CollisionLayers},
+    prelude::{Collider, CollidingEntities, CollisionLayers, Sensor},
 };
 use bevy::{prelude::*, transform};
 
@@ -27,51 +27,13 @@ impl Health {
     }
 }
 
-#[derive(Event)]
+#[derive(Event, Debug)]
 pub struct DeathEvent(Entity);
 
-#[derive(Event)]
+#[derive(Event, Debug)]
 pub struct ChangeHpEvent {
     target: Entity,
     amount: f32,
-}
-fn tick_hurt_boxes(query: Query<&mut HurtBox>, time: Res<Time>) {
-    for mut hb in query {
-        hb.remaining_rehit_delay -= time.delta_secs_f64().adjust_precision();
-    }
-}
-fn tick_hit_boxes(query: Query<&mut HitBox>, time: Res<Time>) {
-    for mut hb in query {
-        hb.remaining_immunity_duration -= time.delta_secs_f64().adjust_precision();
-    }
-}
-
-fn get_hurt(
-    mut query: Query<(Entity, &CollidingEntities, &mut HurtBox)>,
-    mut hitboxes: Query<&mut HitBox>,
-    mut hurt_event_writer: EventWriter<ChangeHpEvent>,
-    parent_query: Query<&ChildOf>,
-) {
-    for (entity, colliding_entities, mut hurt_box) in &mut query {
-        if hurt_box.remaining_rehit_delay <= 0.0 {
-            continue;
-        }
-        for hitbox_ent in colliding_entities.0.iter() {
-            if let Ok(mut hb) = hitboxes.get_mut(*hitbox_ent) {
-                if hb.remaining_immunity_duration <= 0.0 {
-                    if let Ok(parent) = parent_query.get(entity) {
-                        hurt_event_writer.write(ChangeHpEvent {
-                            target: parent.parent(),
-                            amount: -hb.damage,
-                        });
-                        hurt_box.remaining_rehit_delay = hurt_box.full_rehit_delay;
-                        hb.remaining_immunity_duration = hb.full_immunity_duration;
-                        break;
-                    }
-                }
-            }
-        }
-    }
 }
 
 pub fn hurtbox_prefab(
@@ -97,6 +59,7 @@ pub fn hurtbox_prefab_t(
         collision_layer,
         CollidingEntities::default(),
         transform,
+        Sensor,
         HurtBox {
             full_rehit_delay,
             remaining_rehit_delay: full_rehit_delay,
@@ -130,6 +93,7 @@ pub fn hitbox_prefab_t(
         collider,
         collision_layer,
         transform,
+        Sensor,
         HitBox {
             full_immunity_duration,
             damage,
@@ -153,6 +117,45 @@ pub struct HitBox {
     damage: f32,
 }
 
+fn tick_hurt_boxes(query: Query<&mut HurtBox>, time: Res<Time>) {
+    for mut hb in query {
+        hb.remaining_rehit_delay -= time.delta_secs_f64().adjust_precision();
+    }
+}
+fn tick_hit_boxes(query: Query<&mut HitBox>, time: Res<Time>) {
+    for mut hb in query {
+        hb.remaining_immunity_duration -= time.delta_secs_f64().adjust_precision();
+    }
+}
+
+fn get_hurt(
+    mut query: Query<(Entity, &CollidingEntities, &mut HurtBox)>,
+    mut hitboxes: Query<&mut HitBox>,
+    mut hurt_event_writer: EventWriter<ChangeHpEvent>,
+    parent_query: Query<&ChildOf>,
+) {
+    for (entity, colliding_entities, mut hurt_box) in &mut query {
+        if hurt_box.remaining_rehit_delay > 0.0 {
+            continue;
+        }
+        for hitbox_ent in colliding_entities.0.iter() {
+            if let Ok(mut hb) = hitboxes.get_mut(*hitbox_ent) {
+                if hb.remaining_immunity_duration <= 0.0 {
+                    if let Ok(parent) = parent_query.get(entity) {
+                        hurt_event_writer.write(ChangeHpEvent {
+                            target: parent.parent(),
+                            amount: -hb.damage,
+                        });
+                        hurt_box.remaining_rehit_delay = hurt_box.full_rehit_delay;
+                        hb.remaining_immunity_duration = hb.full_immunity_duration;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+}
+
 fn change_hp(
     mut change_hp_reader: EventReader<ChangeHpEvent>,
     mut death_event_writer: EventWriter<DeathEvent>,
@@ -166,9 +169,7 @@ fn change_hp(
 
     for (entity, delta) in accumulated_deltas {
         if let Ok(mut health) = query.get_mut(entity) {
-            dbg!(health.current);
-            health.current = (health.current + delta).max(health.max);
-            dbg!(health.current);
+            health.current = (health.current + delta).min(health.max);
             if health.current <= 0.0 {
                 death_event_writer.write(DeathEvent(entity));
             }

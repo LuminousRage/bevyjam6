@@ -6,9 +6,8 @@ use bevy::{
     math::ops::{exp, ln},
     prelude::*,
 };
-use bevy_inspector_egui::egui::debug_text::print;
 
-use crate::{collision_layers::GameLayer, enemy::slime::SlimeController};
+use crate::collision_layers::GameLayer;
 
 pub(super) fn plugin(app: &mut App) {
     app.add_systems(Update, (update_grounded, apply_movement_damping))
@@ -65,28 +64,14 @@ impl CreaturePhysicsBundle {
         }
     }
 }
-
 /// Updates the [`Grounded`] status for entities that dont Fly
 fn update_grounded(
     mut commands: Commands,
-    mut query: Query<
-        (
-            Entity,
-            &ShapeHits,
-            &Rotation,
-            Option<&MaxSlopeAngle>,
-            Has<SlimeController>,
-        ),
-        Without<Flying>,
-    >,
+    mut query: Query<(Entity, &ShapeHits, &Rotation, Option<&MaxSlopeAngle>), Without<Flying>>,
 ) {
-    for (entity, hits, rotation, max_slope_angle, is_slime) in &mut query {
+    for (entity, hits, rotation, max_slope_angle) in &mut query {
         // The character is grounded if the shape caster has a hit with a normal
         // that isn't too steep.
-        if is_slime {
-            dbg!(entity);
-            dbg!(hits);
-        }
         let is_grounded = hits.iter().any(|hit| {
             if let Some(angle) = max_slope_angle {
                 (rotation * -hit.normal2).angle_to(Vector::Y).abs() <= angle.0

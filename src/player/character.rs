@@ -91,7 +91,7 @@ pub fn player(
         ColliderDensity(2.0),
         GravityScale(CHARACTER_GRAVITY_SCALE),
         children![hurtbox_prefab(
-            Collider::capsule(40.0, 70.0),
+            Collider::capsule(30.0, 135.0),
             player_hurt_boxes(),
             0.5
         )],

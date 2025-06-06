@@ -54,7 +54,7 @@ pub fn slime(slime_assets: &SlimeAssets, translation: Vec3) -> impl Bundle {
         ColliderDensity(2.0),
         GravityScale(1.0),
         children![
-            hurtbox_prefab(Collider::circle(30.0), enemy_hurt_boxes(), 0.5),
+            hurtbox_prefab(Collider::circle(40.0), enemy_hurt_boxes(), 0.5),
             hitbox_prefab(Collider::circle(40.0), enemy_hit_boxes(), 0.5, 10.0)
         ],
     )
@@ -111,11 +111,6 @@ fn enemy_decision_making(
         let target_length = target_coords.x - pos.translation.x;
         let target_height = (target_coords.y - pos.translation.y)
             .min(0.5 * JUMP_IMPULSE.powf(2.0) / GRAVITY_ACCELERATION);
-        dbg!(is_grounded);
-        dbg!(pos.translation.x);
-        dbg!(pos.translation.y);
-        dbg!(velocity.x);
-        dbg!(velocity.y);
 
         //good time for a jump attack?
         if is_grounded && slime.jump_attack_cooldown <= 0.0 {
@@ -132,7 +127,6 @@ fn enemy_decision_making(
             continue;
         }
         if is_grounded && slime.jump_attack_cooldown < JUMP_ATTACK_COOLDOWN {
-            dbg!("WHAT");
             velocity.x = 0.0;
         }
     }
