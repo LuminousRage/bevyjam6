@@ -38,6 +38,9 @@ const SCALE_DECREASE_FACTOR: f32 = 0.8;
 const COOLDOWN_INCREASE_FACTOR: f32 = 1.2;
 const COOLDOWN_DECREASE_FACTOR: f32 = 0.8;
 
+const WEAPON_ATTACK_HORIZONTAL_OFFSET: Vec3 = Vec3::new(-60.0, -47.0, -1.0);
+const WEAPON_ATTACK_VERTICAL_OFFSET: Vec3 = Vec3::new(30.0, 10.0, -1.0);
+
 #[derive(Event)]
 pub struct InputAttackEvent;
 
@@ -52,7 +55,7 @@ pub struct Attack {
     pub attack_delay: f32,
     /// Weapon size multiplier
     pub extend_scale: f32,
-    pub attack_position: AttackPosition,
+    pub position: AttackPosition,
 }
 
 #[derive(Default)]
@@ -63,10 +66,50 @@ pub enum AttackPosition {
 }
 
 impl AttackPosition {
-    pub fn vector(&self, attack_direction: Vec2) -> Vec2 {
+    pub fn get_next(&self) -> Self {
         match self {
-            AttackPosition::Up => Vec2::Y * attack_direction.y.signum(),
-            AttackPosition::Down => Vec2::NEG_Y * attack_direction.y.signum(),
+            AttackPosition::Up => AttackPosition::Down,
+            AttackPosition::Down => AttackPosition::Up,
+        }
+    }
+
+    // todo: this code sucks, maybe fix it later
+    pub fn get_translate(&self, attack_direction: Vec2) -> Vec3 {
+        if attack_direction.x == 0.0 {
+            let translation_offset = if let AttackPosition::Down = self {
+                Vec3::new(-70.0, 0.0, 0.0)
+            } else {
+                Vec3::ZERO
+            };
+
+            (WEAPON_ATTACK_VERTICAL_OFFSET + translation_offset)
+                * Vec3::new(1.0, attack_direction.y, 1.0)
+        } else {
+            let translation_offset = if let AttackPosition::Down = self {
+                Vec3::new(0.0, 110.0, 0.0)
+            } else {
+                Vec3::ZERO
+            };
+
+            (WEAPON_ATTACK_HORIZONTAL_OFFSET + translation_offset)
+                * Vec3::new(attack_direction.x, 1.0, 1.0)
+        }
+    }
+
+    pub fn get_scale(&self, attack_direction: Vec2) -> Vec3 {
+        let is_vertical = attack_direction.x == 0.0;
+        let is_positive = if is_vertical {
+            attack_direction.y > 0.0
+        } else {
+            attack_direction.x > 0.0
+        };
+
+        match (is_vertical, is_positive, self) {
+            (true, false, AttackPosition::Up)
+            | (true, true, AttackPosition::Down)
+            | (false, true, AttackPosition::Down)
+            | (false, false, AttackPosition::Up) => Vec3::new(1.0, 1.0, 1.0),
+            _ => Vec3::new(-1.0, 1.0, 1.0),
         }
     }
 }
@@ -104,7 +147,7 @@ impl AttackPhase {
             AttackPhase::Cooling(timer) => {
                 timer.tick(time);
             }
-        }
+        };
     }
 }
 
@@ -119,7 +162,7 @@ impl Attack {
             phase: AttackPhase::default(),
             attack_delay,
             extend_scale,
-            attack_position: AttackPosition::default(),
+            position: AttackPosition::default(),
         }
     }
 
@@ -201,10 +244,7 @@ fn attack_handler(
 fn do_attack(mut player: Single<(&mut Attack, Entity), With<Player>>) {
     let (attack, entity) = &mut *player;
 
-    if let AttackPhase::Attacking = attack.phase {
-        attack.phase =
-            AttackPhase::Ready(Timer::from_seconds(ATTACK_PERIOD_SECONDS, TimerMode::Once));
-    }
+    if let AttackPhase::Attacking = attack.phase {}
 }
 
 fn player_attack_direction(

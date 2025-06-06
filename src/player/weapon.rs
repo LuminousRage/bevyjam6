@@ -29,7 +29,7 @@ const OFFSET_FROM_EXTEND: u64 = 178;
 const EXTEND_SIZE: u64 = 595;
 const WEAPON_FOLLOW_OFFSET: Vec3 = Vec3::new(55.0, -35.0, -1.0);
 const WEAPON_ATTACK_HORIZONTAL_OFFSET: Vec3 = Vec3::new(-60.0, -47.0, -1.0);
-const WEAPON_ATTACK_VERTICAL_OFFSET: Vec3 = Vec3::new(30.0, -30.0, -1.0);
+const WEAPON_ATTACK_VERTICAL_OFFSET: Vec3 = Vec3::new(30.0, 10.0, -1.0);
 
 const INACTIVE_WEAPON_TRANSPARENCY: f32 = 0.4;
 
@@ -200,19 +200,22 @@ fn move_weapon_while_attack(
                 sprite.color = transparency;
             });
             following.rotation = Quat::from_rotation_z(Vec2::Y.angle_to(player.attack_direction));
-            let weapon_attack_offset = if player.attack_direction.x == 0.0 {
-                WEAPON_ATTACK_VERTICAL_OFFSET
-                    * Vec2::new(1.0, player.attack_direction.y).extend(1.0)
-            } else {
-                WEAPON_ATTACK_HORIZONTAL_OFFSET
-                    * Vec2::new(player.attack_direction.x, 1.0).extend(1.0)
-            };
-            let target_translation = &transform.translation + weapon_attack_offset;
-            following
-                .translation
-                .smooth_nudge(&target_translation, 5.0, delta_time);
+            following.scale =
+                attack.position.get_scale(player.attack_direction) * Vec2::splat(0.05).extend(1.0);
+            following.translation.smooth_nudge(
+                &(transform.translation + attack.position.get_translate(player.attack_direction)),
+                10.0,
+                delta_time,
+            );
         }
-        AttackPhase::Attacking => {}
+        AttackPhase::Attacking => {
+            let target_position = attack.position.get_next();
+            following.translation.smooth_nudge(
+                &(transform.translation + target_position.get_translate(player.attack_direction)),
+                10.0,
+                delta_time,
+            );
+        }
         AttackPhase::Ready(timer) => {}
         AttackPhase::Cooling(timer) => {}
     }
