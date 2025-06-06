@@ -1,6 +1,4 @@
-use std::f32::consts::PI;
-
-use bevy::{prelude::*, sprite::Anchor, text::cosmic_text::rustybuzz::script::YI};
+use bevy::{prelude::*, sprite::Anchor};
 
 use crate::{asset_tracking::LoadResource, player::attack::Attack};
 
@@ -16,8 +14,8 @@ pub(super) fn plugin(app: &mut App) {
 const OFFSET_FROM_BASE: u64 = 898;
 const OFFSET_FROM_EXTEND: u64 = 178;
 const EXTEND_SIZE: u64 = 595;
-const WEAPON_FOLLOW_OFFSET: Vec3 = Vec3::new(45.0, -35.0, -1.0);
-const WEAPON_ATTACK_HORIZONTAL_OFFSET: Vec3 = Vec3::new(-70.0, -35.0, -1.0);
+const WEAPON_FOLLOW_OFFSET: Vec3 = Vec3::new(55.0, -35.0, -1.0);
+const WEAPON_ATTACK_HORIZONTAL_OFFSET: Vec3 = Vec3::new(-60.0, -40.0, -1.0);
 
 #[derive(Component)]
 pub struct Weapon;
