@@ -127,7 +127,7 @@ pub fn weapon(player_assets: &WeaponAssets) -> impl Bundle {
                     ..default()
                 },
                 children![hitbox_prefab(
-                    Collider::circle(30.0),
+                    Collider::rectangle(50.0, 40.0),
                     player_hit_boxes(),
                     0.5,
                     10.0,

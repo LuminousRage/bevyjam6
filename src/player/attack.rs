@@ -138,6 +138,10 @@ impl Attack {
                 (self.extend_scale * SCALE_INCREASE_FACTOR).min(INITIAL_EXTEND_SCALE);
         };
     }
+
+    pub fn new_reaction_timer(&self) -> AttackPhase {
+        AttackPhase::Reacting(Timer::from_seconds(self.attack_delay, TimerMode::Once))
+    }
 }
 
 fn attack_handler(
@@ -180,7 +184,7 @@ fn attack_handler(
                 ));
             } else if has_attack_input {
                 attack.update_fury(true);
-                attack.phase = AttackPhase::Attacking;
+                attack.phase = attack.new_reaction_timer();
             }
         }
         AttackPhase::Cooling(timer) => {
@@ -188,7 +192,7 @@ fn attack_handler(
                 commands.entity(*entity).remove::<Attack>();
             } else if has_attack_input {
                 attack.update_fury(false);
-                attack.phase = AttackPhase::Attacking;
+                attack.phase = attack.new_reaction_timer();
             }
         }
     }
