@@ -6,6 +6,9 @@ use bevy::{
     math::ops::{exp, ln},
     prelude::*,
 };
+use bevy_inspector_egui::egui::debug_text::print;
+
+use crate::{collision_layers::GameLayer, enemy::slime::SlimeController};
 
 pub(super) fn plugin(app: &mut App) {
     app.add_systems(Update, (update_grounded, apply_movement_damping))
@@ -34,28 +37,56 @@ pub struct MovementDampingFactor(Scalar);
 #[reflect(Component)]
 pub struct MaxSlopeAngle(Scalar);
 /// A bundle that contains creature physics.
-#[derive(Bundle, Reflect)]
+#[derive(Bundle)]
 pub struct CreaturePhysicsBundle {
     damping: MovementDampingFactor,
     max_slope_angle: MaxSlopeAngle,
+    body: RigidBody,
+    collider: Collider,
+    ground_caster: ShapeCaster,
+    locked_axes: LockedAxes,
 }
 /// A bundle that contains creature physics.
 impl CreaturePhysicsBundle {
-    pub const fn new(damping: f32, max_slope_angle: f32) -> Self {
+    pub fn new(collider: Collider, scale: Vector, damping: f32, max_slope_angle: f32) -> Self {
+        // Create shape caster as a slightly smaller version of collider
+        let mut caster_shape = collider.clone();
+        caster_shape.set_scale(scale * 0.99, 10);
+
         Self {
             damping: MovementDampingFactor(damping),
             max_slope_angle: MaxSlopeAngle(max_slope_angle),
+            body: RigidBody::Dynamic,
+            collider,
+            ground_caster: ShapeCaster::new(caster_shape, Vector::ZERO, 0.0, Dir2::NEG_Y)
+                .with_max_distance(10.0)
+                .with_query_filter(SpatialQueryFilter::from_mask(GameLayer::Ground)),
+            locked_axes: LockedAxes::ROTATION_LOCKED,
         }
     }
 }
+
 /// Updates the [`Grounded`] status for entities that dont Fly
 fn update_grounded(
     mut commands: Commands,
-    mut query: Query<(Entity, &ShapeHits, &Rotation, Option<&MaxSlopeAngle>), Without<Flying>>,
+    mut query: Query<
+        (
+            Entity,
+            &ShapeHits,
+            &Rotation,
+            Option<&MaxSlopeAngle>,
+            Has<SlimeController>,
+        ),
+        Without<Flying>,
+    >,
 ) {
-    for (entity, hits, rotation, max_slope_angle) in &mut query {
+    for (entity, hits, rotation, max_slope_angle, is_slime) in &mut query {
         // The character is grounded if the shape caster has a hit with a normal
         // that isn't too steep.
+        if is_slime {
+            dbg!(entity);
+            dbg!(hits);
+        }
         let is_grounded = hits.iter().any(|hit| {
             if let Some(angle) = max_slope_angle {
                 (rotation * -hit.normal2).angle_to(Vector::Y).abs() <= angle.0
