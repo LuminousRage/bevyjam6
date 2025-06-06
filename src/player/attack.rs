@@ -185,6 +185,10 @@ impl Attack {
     pub fn new_reaction_timer(&self) -> AttackPhase {
         AttackPhase::Reacting(Timer::from_seconds(self.attack_delay, TimerMode::Once))
     }
+
+    pub fn new_ready_timer() -> AttackPhase {
+        AttackPhase::Ready(Timer::from_seconds(ATTACK_PERIOD_SECONDS, TimerMode::Once))
+    }
 }
 
 fn attack_handler(
@@ -212,7 +216,6 @@ fn attack_handler(
     match &mut attack.phase {
         AttackPhase::Reacting(timer) => {
             if timer.just_finished() {
-                attack.update_fury(true);
                 attack.phase = AttackPhase::Attacking;
             }
         }
@@ -220,12 +223,14 @@ fn attack_handler(
         AttackPhase::Attacking => {}
         AttackPhase::Ready(timer) => {
             if timer.just_finished() {
+                attack.update_fury(false);
                 // if we are in ready phase, we can start cooling down
                 attack.phase = AttackPhase::Cooling(Timer::from_seconds(
                     GRACE_PERIOD_SECONDS,
                     TimerMode::Once,
                 ));
             } else if has_attack_input {
+                // this should go when you move to the ready phase
                 attack.update_fury(true);
                 attack.phase = attack.new_reaction_timer();
             }
@@ -234,7 +239,6 @@ fn attack_handler(
             if timer.just_finished() {
                 commands.entity(*entity).remove::<Attack>();
             } else if has_attack_input {
-                attack.update_fury(false);
                 attack.phase = attack.new_reaction_timer();
             }
         }

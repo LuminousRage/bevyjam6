@@ -28,8 +28,6 @@ const OFFSET_FROM_BASE: u64 = 898;
 const OFFSET_FROM_EXTEND: u64 = 178;
 const EXTEND_SIZE: u64 = 595;
 const WEAPON_FOLLOW_OFFSET: Vec3 = Vec3::new(55.0, -35.0, -1.0);
-const WEAPON_ATTACK_HORIZONTAL_OFFSET: Vec3 = Vec3::new(-60.0, -47.0, -1.0);
-const WEAPON_ATTACK_VERTICAL_OFFSET: Vec3 = Vec3::new(30.0, 10.0, -1.0);
 
 const INACTIVE_WEAPON_TRANSPARENCY: f32 = 0.4;
 
@@ -209,9 +207,13 @@ fn move_weapon_while_attack(
             );
         }
         AttackPhase::Attacking => {
-            let target_position = attack.position.get_next();
+            let target_position = attack
+                .position
+                .get_next()
+                .get_translate(player.attack_direction);
+
             following.translation.smooth_nudge(
-                &(transform.translation + target_position.get_translate(player.attack_direction)),
+                &(transform.translation + target_position),
                 10.0,
                 delta_time,
             );
