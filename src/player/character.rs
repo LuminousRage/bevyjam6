@@ -93,7 +93,8 @@ pub fn player(
         children![hurtbox_prefab(
             Collider::capsule(30.0, 135.0),
             player_hurt_boxes(),
-            0.5
+            0.5,
+            Transform::default()
         )],
     )
 }

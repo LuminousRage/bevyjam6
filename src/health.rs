@@ -39,18 +39,6 @@ pub struct ChangeHpEvent {
 pub fn hurtbox_prefab(
     collider: Collider,
     collision_layer: CollisionLayers,
-    full_immunity_duration: f32,
-) -> impl Bundle {
-    hurtbox_prefab_t(
-        collider,
-        collision_layer,
-        full_immunity_duration,
-        Transform::default(),
-    )
-}
-pub fn hurtbox_prefab_t(
-    collider: Collider,
-    collision_layer: CollisionLayers,
     full_rehit_delay: f32,
     transform: Transform,
 ) -> impl Bundle {

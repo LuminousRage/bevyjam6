@@ -54,7 +54,12 @@ pub fn slime(slime_assets: &SlimeAssets, translation: Vec3) -> impl Bundle {
         ColliderDensity(2.0),
         GravityScale(1.0),
         children![
-            hurtbox_prefab(Collider::circle(40.0), enemy_hurt_boxes(), 0.5),
+            hurtbox_prefab(
+                Collider::circle(40.0),
+                enemy_hurt_boxes(),
+                0.5,
+                Transform::default()
+            ),
             hitbox_prefab(Collider::circle(40.0), enemy_hit_boxes(), 0.5, 10.0)
         ],
     )
