@@ -3,7 +3,9 @@ use bevy::prelude::*;
 
 use crate::{
     collision_layers::GameLayer,
-    enemy::slime::{SlimeAssets, slime},
+    enemy::{
+        slime::{SlimeAssets, slime},
+    },
     player::{
         character::{PlayerAssets, player},
         weapon::{WeaponAssets, weapon},
@@ -17,6 +19,7 @@ pub fn spawn_level(
     player_assets: Res<PlayerAssets>,
     weapon_assets: Res<WeaponAssets>,
     slime_assets: Res<SlimeAssets>,
+    boss_assets: Res<BossAssets>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
@@ -31,10 +34,11 @@ pub fn spawn_level(
         ],
     ));
 
-    let slime = || slime(&slime_assets, Vec3::new(200.0, 2000.0, 0.0));
+    let red_slime = || slime(&slime_assets, Vec3::new(200.0, 2000.0, 0.0), true);
+    let black_slime = || slime(&slime_assets, Vec3::new(-200.0, 2000.0, 0.0), false);
 
-    commands.spawn(slime());
-    // commands.spawn(slime());
+    commands.spawn(red_slime());
+    commands.spawn(black_slime());
 
     commands.spawn((
         Name::new("Platform"),
