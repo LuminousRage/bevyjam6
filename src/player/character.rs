@@ -68,19 +68,18 @@ pub fn player(
 ) -> impl Bundle {
     (
         Name::new("Player"),
-        Transform::from_scale(Vec2::splat(0.27).extend(1.0)),
+        Transform::from_xyz(0.0, 0.0, 1.0),
         Player {
             face_direction: Vec2::X,
             attack_direction: Vec2::X,
         },
         Sprite {
             image: player_assets.player.clone(),
-            // anchor: Anchor::BottomCenter,
+            custom_size: Some(Vec2::new(170., 170.0)),
+            image_mode: SpriteImageMode::Scale(ScalingMode::FitCenter),
             ..default()
         },
-        // Mesh2d(meshes.add(Capsule2d::new(40.0, 500.0))),
-        // MeshMaterial2d(materials.add(Color::srgb(0.2, 0.7, 0.9))),
-        CharacterControllerBundle::new(Collider::capsule(40.0, 500.0)),
+        CharacterControllerBundle::new(Collider::capsule(15.0, 135.0)),
         Health::new(CHARACTER_HEALTH),
         Friction::ZERO.with_combine_rule(CoefficientCombine::Min),
         Restitution::ZERO.with_combine_rule(CoefficientCombine::Min),
