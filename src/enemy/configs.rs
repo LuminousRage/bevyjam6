@@ -1,14 +1,14 @@
 use avian2d::math::Scalar;
 
-pub const JUMP_IMPULSE: f32 = 1100.0;
-pub const MOVEMENT_DAMPING: f32 = 8.0;
+pub const JUMP_IMPULSE: f32 = 500.0;
+pub const MOVEMENT_DAMPING: f32 = 0.0;
 pub const MAX_SLOPE_ANGLE: f32 = (30.0 as Scalar).to_radians();
 pub const CHARACTER_HEALTH: f32 = 30.0;
 pub const JUMP_ATTACK_COOLDOWN: f32 = 5.0;
 pub const MOVEMENT_ACCELERATION: f32 = 3000.0;
+pub const MAX_X_VELOCITY: f32 = 300.0;
 
 //imp stuff
-pub const MAX_X_VELOCITY: f32 = 30.0;
 pub const USE_JUMP_ATTACK_HEIGHT_DIFF_THRESHOLD: f32 = 30.0;
 pub const USE_JUMP_ATTACK_MIN_LENGTH_THRESHOLD: f32 = 30.0;
 pub const MELEE_ATTACK_COOLDOWN: f32 = 1.0;
