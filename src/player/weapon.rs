@@ -20,9 +20,13 @@ const OFFSET_FROM_EXTEND: u64 = 178;
 const EXTEND_SIZE: u64 = 595;
 const WEAPON_FOLLOW_OFFSET: Vec3 = Vec3::new(55.0, -35.0, -1.0);
 const WEAPON_ATTACK_HORIZONTAL_OFFSET: Vec3 = Vec3::new(-60.0, -40.0, -1.0);
+const INACTIVE_WEAPON_TRANSPARENCY: f32 = 0.4;
 
 #[derive(Component)]
 pub struct Weapon;
+
+#[derive(Component)]
+pub struct WeaponParts;
 
 #[derive(Resource, Asset, Clone, Reflect)]
 #[reflect(Resource)]
@@ -87,6 +91,7 @@ pub fn weapon(player_assets: &WeaponAssets) -> impl Bundle {
             (
                 Name::new("Weapon Base"),
                 Transform::from_xyz(0.0, 0.0, 0.0),
+                WeaponParts,
                 Sprite {
                     image: player_assets.weapon_base.clone(),
                     anchor: Anchor::BottomCenter,
@@ -96,6 +101,7 @@ pub fn weapon(player_assets: &WeaponAssets) -> impl Bundle {
             (
                 Name::new("Weapon Extend"),
                 Transform::from_xyz(0.0, OFFSET_FROM_BASE as f32, 0.0),
+                WeaponParts,
                 Sprite {
                     image: player_assets.weapon_extend.clone(),
                     anchor: Anchor::BottomCenter,
@@ -105,6 +111,7 @@ pub fn weapon(player_assets: &WeaponAssets) -> impl Bundle {
             (
                 Name::new("Weapon Head"),
                 Transform::from_xyz(0.0, (OFFSET_FROM_EXTEND + OFFSET_FROM_BASE) as f32, 0.0),
+                WeaponParts,
                 Sprite {
                     image: player_assets.weapon_head.clone(),
                     anchor: Anchor::BottomCenter,
@@ -121,8 +128,13 @@ pub fn weapon(player_assets: &WeaponAssets) -> impl Bundle {
     )
 }
 
+fn color_with_transparency(alpha: f32) -> Color {
+    Color::srgba(1.0, 1.0, 1.0, alpha)
+}
+
 fn move_weapon(
     mut following: Single<&mut Transform, With<Weapon>>,
+    mut following_parts: Query<&mut Sprite, With<WeaponParts>>,
     player_without_attack: Option<
         Single<(&Transform, &Player), (Without<Weapon>, Without<Attack>)>,
     >,
@@ -134,7 +146,10 @@ fn move_weapon(
 
     if let Some(p) = player_without_attack {
         let (transform, player) = *p;
-
+        following_parts.iter_mut().for_each(|mut sprite| {
+            sprite.color = color_with_transparency(INACTIVE_WEAPON_TRANSPARENCY);
+        });
+        // following_sprite.color = color_with_transparency(INACTIVE_WEAPON_TRANSPARENCY);
         following.scale = {
             let Vec3 { x, y, z } = following.scale;
             let direction = if following.translation.x > transform.translation.x {
@@ -145,7 +160,6 @@ fn move_weapon(
             Vec3::new(direction * x.abs(), y, z)
         };
         following.rotation = Quat::default();
-
         let target_translation = &transform.translation
             + WEAPON_FOLLOW_OFFSET * (Vec3::new(-player.face_direction.x, 1., 1.));
         following
@@ -158,7 +172,9 @@ fn move_weapon(
         let target_translation = &transform.translation
             + WEAPON_ATTACK_HORIZONTAL_OFFSET
                 * (player.attack_direction * Vec2::new(1.0, 1.0)).extend(1.0);
-
+        following_parts.iter_mut().for_each(|mut sprite| {
+            sprite.color = color_with_transparency(1.0);
+        });
         following.rotation = Quat::from_rotation_z(Vec2::Y.angle_to(player.attack_direction));
         following
             .translation
