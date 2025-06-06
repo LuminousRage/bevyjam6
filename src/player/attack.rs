@@ -27,9 +27,10 @@ pub(super) fn plugin(app: &mut App) {
     );
 }
 
-const INITIAL_ATTACK_COOLDOWN_MILLISECONDS: u64 = 2000;
-const MINIMUM_ATTACK_COOLDOWN_MILLISECONDS: u64 = 100;
-const ATTACK_PERIOD_MILLISECONDS: u64 = 200;
+const INITIAL_ATTACK_COOLDOWN_SECONDS: f32 = 2.;
+const MINIMUM_ATTACK_COOLDOWN_SECONDS: f32 = 1.;
+const ATTACK_PERIOD_SECONDS: f32 = 2.;
+const GRACE_PERIOD_SECONDS: f32 = 2.0;
 const INITIAL_EXTEND_SCALE: f32 = 8.0;
 const MINIMUM_EXTEND_SCALE: f32 = 1.0;
 
@@ -71,7 +72,7 @@ pub enum AttackPhase {
 impl Default for AttackPhase {
     fn default() -> Self {
         AttackPhase::Reacting(Timer::from_seconds(
-            INITIAL_ATTACK_COOLDOWN_MILLISECONDS as f32 / 1000.0,
+            INITIAL_ATTACK_COOLDOWN_SECONDS,
             TimerMode::Once,
         ))
     }
@@ -96,14 +97,14 @@ impl AttackPhase {
 
 impl Default for Attack {
     fn default() -> Self {
-        Attack::new(INITIAL_ATTACK_COOLDOWN_MILLISECONDS, INITIAL_EXTEND_SCALE)
+        Attack::new(INITIAL_ATTACK_COOLDOWN_SECONDS, INITIAL_EXTEND_SCALE)
     }
 }
 impl Attack {
-    pub fn new(initial_attack_cooldown: u64, extend_scale: f32) -> Self {
+    pub fn new(attack_delay: f32, extend_scale: f32) -> Self {
         Self {
             phase: AttackPhase::default(),
-            attack_delay: initial_attack_cooldown as f32,
+            attack_delay,
             extend_scale,
         }
     }
@@ -113,12 +114,12 @@ impl Attack {
         // because it should never be bigger than INITIAL_ATTACK_COOLDOWN_MILLISECONDS
         if increase_fury {
             let decreased_cooldown = self.attack_delay * COOLDOWN_DECREASE_FACTOR;
-            self.attack_delay = decreased_cooldown.max(MINIMUM_ATTACK_COOLDOWN_MILLISECONDS as f32);
+            self.attack_delay = decreased_cooldown.max(MINIMUM_ATTACK_COOLDOWN_SECONDS);
             self.extend_scale =
                 (self.extend_scale * SCALE_DECREASE_FACTOR).max(MINIMUM_EXTEND_SCALE);
         } else {
             let increased_cooldown = self.attack_delay * COOLDOWN_INCREASE_FACTOR;
-            self.attack_delay = increased_cooldown.max(INITIAL_ATTACK_COOLDOWN_MILLISECONDS as f32);
+            self.attack_delay = increased_cooldown.max(INITIAL_ATTACK_COOLDOWN_SECONDS);
             self.extend_scale =
                 (self.extend_scale * SCALE_INCREASE_FACTOR).min(INITIAL_EXTEND_SCALE);
         };
@@ -161,7 +162,7 @@ fn attack_handler(
             if timer.just_finished() {
                 // if we are in ready phase, we can start cooling down
                 attack.phase = AttackPhase::Cooling(Timer::from_seconds(
-                    attack.attack_delay / 1000.0,
+                    GRACE_PERIOD_SECONDS,
                     TimerMode::Once,
                 ));
             } else if has_attack_input {
@@ -180,40 +181,6 @@ fn attack_handler(
             }
         }
     }
-
-    // match (
-    //     attack.attack_delay.finished(),
-    //     attack.attack_tolerance.just_finished(),
-    //     attack.previous_attack_failed,
-    // ) {
-    //     // in cooldown period, just ignore
-    //     (false, _, _) => {
-    //         if attack.attack_tolerance.just_finished() || attack.previous_attack_failed {
-    //             dbg!("Attack period finished while in cooldown, this should not happen");
-    //         }
-    //     }
-
-    //     // cooldown finished, we are in attack period
-    //     (true, false, status) => {
-    //         if has_attack_input {
-    //             attack.update_cooldown_timer(!status);
-    //             attack_event.write(DoAttackEvent);
-    //         }
-    //         // no attack, gg go next
-    //     }
-
-    //     // first offence
-    //     (true, true, false) => {
-    //         attack.previous_attack_failed = true;
-    //         // handle weapon size
-    //     }
-
-    //     // second offence, remove pls
-    //     (true, true, true) => {
-    //         commands.entity(*entity).remove::<Attack>();
-    //         // handle weapon size
-    //     }
-    // }
 }
 
 fn do_attack(mut attack_event: EventReader<DoAttackEvent>) {
