@@ -35,8 +35,8 @@ const MINIMUM_EXTEND_SCALE: f32 = 1.0;
 
 const SCALE_INCREASE_FACTOR: f32 = 1.2;
 const SCALE_DECREASE_FACTOR: f32 = 0.8;
-const COOLDOWN_INCREASE_FACTOR: f64 = 1.2;
-const COOLDOWN_DECREASE_FACTOR: f64 = 0.8;
+const COOLDOWN_INCREASE_FACTOR: f32 = 1.2;
+const COOLDOWN_DECREASE_FACTOR: f32 = 0.8;
 
 #[derive(Event)]
 pub struct InputAttackEvent;
@@ -92,6 +92,15 @@ impl AttackPhase {
             }
         }
     }
+
+    pub fn finished(&self, attack_finished: bool) -> bool {
+        match self {
+            AttackPhase::Reacting(timer) => timer.finished(),
+            AttackPhase::Attacking => attack_finished,
+            AttackPhase::Ready(timer) => timer.finished(),
+            AttackPhase::Cooling(timer) => timer.finished(),
+        }
+    }
 }
 
 impl Default for Attack {
@@ -106,6 +115,22 @@ impl Attack {
             attack_delay: initial_attack_cooldown as f32,
             extend_scale,
         }
+    }
+
+    pub fn update_fury(&mut self, increase_fury: bool) {
+        // that u128 duration cast to f64 should be fine
+        // because it should never be bigger than INITIAL_ATTACK_COOLDOWN_MILLISECONDS
+        if increase_fury {
+            let decreased_cooldown = self.attack_delay * COOLDOWN_DECREASE_FACTOR;
+            self.attack_delay = decreased_cooldown.max(MINIMUM_ATTACK_COOLDOWN_MILLISECONDS as f32);
+            self.extend_scale =
+                (self.extend_scale * SCALE_DECREASE_FACTOR).max(MINIMUM_EXTEND_SCALE);
+        } else {
+            let increased_cooldown = self.attack_delay * COOLDOWN_INCREASE_FACTOR;
+            self.attack_delay = increased_cooldown.max(INITIAL_ATTACK_COOLDOWN_MILLISECONDS as f32);
+            self.extend_scale =
+                (self.extend_scale * SCALE_INCREASE_FACTOR).min(INITIAL_EXTEND_SCALE);
+        };
     }
 
     // Triggers an attack action - this should decrease the cooldown and reset everything.
@@ -130,15 +155,6 @@ impl Attack {
     //         (new_cooldown, new_extend_scale)
     //     };
     //     *self = Attack::new(new_cooldown, new_extend_scale, false);
-    // }
-
-    // /// Tick cooldown timer if not finished, otherwise tick attack period
-    // pub fn tick(&mut self, delta: Duration) {
-    //     if self.attack_delay.finished() {
-    //         self.attack_tolerance.tick(delta);
-    //     } else {
-    //         self.attack_delay.tick(delta);
-    //     }
     // }
 }
 
@@ -172,10 +188,41 @@ fn attack_timer_handler(
     let (attack, entity) = &mut *player;
     attack.phase.tick(time.delta());
 
-    // Consume events so we don't block. but also we don't really care how many events get triggered
-    let mut has_attack_input = false;
-    for _ in input_event.read() {
-        has_attack_input = true;
+    // Loop so we consume events and don't block. but also we don't really care how many events get triggered
+    let has_attack_input = input_event.read().fold(false, |acc, _| acc || true);
+
+    match &mut attack.phase {
+        AttackPhase::Reacting(timer) => {
+            if timer.just_finished() {
+                attack.update_fury(true);
+                attack.phase = AttackPhase::Attacking;
+                attack_event.write(DoAttackEvent);
+            }
+        }
+        // Attacking is handled by animation
+        AttackPhase::Attacking => {}
+        AttackPhase::Ready(timer) => {
+            if timer.just_finished() {
+                // if we are in ready phase, we can start cooling down
+                attack.phase = AttackPhase::Cooling(Timer::from_seconds(
+                    attack.attack_delay / 1000.0,
+                    TimerMode::Once,
+                ));
+            } else if has_attack_input {
+                attack.update_fury(true);
+                attack.phase = AttackPhase::Attacking;
+                attack_event.write(DoAttackEvent);
+            }
+        }
+        AttackPhase::Cooling(timer) => {
+            if timer.just_finished() {
+                commands.entity(*entity).remove::<Attack>();
+            } else if has_attack_input {
+                attack.update_fury(false);
+                attack.phase = AttackPhase::Attacking;
+                attack_event.write(DoAttackEvent);
+            }
+        }
     }
 
     // match (
