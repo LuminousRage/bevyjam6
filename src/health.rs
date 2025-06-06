@@ -60,21 +60,6 @@ pub fn hitbox_prefab(
     collision_layer: CollisionLayers,
     full_immunity_duration: f32,
     damage: f32,
-) -> impl Bundle {
-    hitbox_prefab_t(
-        collider,
-        collision_layer,
-        full_immunity_duration,
-        damage,
-        Transform::default(),
-    )
-}
-
-pub fn hitbox_prefab_t(
-    collider: Collider,
-    collision_layer: CollisionLayers,
-    full_immunity_duration: f32,
-    damage: f32,
     transform: Transform,
 ) -> impl Bundle {
     (

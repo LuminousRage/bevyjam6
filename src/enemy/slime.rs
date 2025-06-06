@@ -60,7 +60,13 @@ pub fn slime(slime_assets: &SlimeAssets, translation: Vec3) -> impl Bundle {
                 0.5,
                 Transform::default()
             ),
-            hitbox_prefab(Collider::circle(40.0), enemy_hit_boxes(), 0.5, 10.0)
+            hitbox_prefab(
+                Collider::circle(40.0),
+                enemy_hit_boxes(),
+                0.5,
+                10.0,
+                Transform::default()
+            )
         ],
     )
 }

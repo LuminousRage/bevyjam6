@@ -121,7 +121,8 @@ pub fn weapon(player_assets: &WeaponAssets) -> impl Bundle {
                     Collider::circle(30.0),
                     player_hit_boxes(),
                     0.5,
-                    10.0
+                    10.0,
+                    Transform::default()
                 )]
             )
         ],
