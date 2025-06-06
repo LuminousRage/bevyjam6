@@ -67,7 +67,6 @@ impl Plugin for AppPlugin {
             // menus::plugin,
             screens::plugin,
             theme::plugin,
-            physics::plugin,
             health::plugin,
             player::plugin,
             enemy::plugin,
