@@ -38,14 +38,15 @@ impl FromWorld for SlimeAssets {
 }
 
 pub fn boss(slime_assets: &SlimeAssets, translation: Vec3) -> impl Bundle {
+    let scale = Vec2::splat(0.5);
     (
         Name::new("Slime"),
-        Transform::from_scale(Vec2::splat(0.5).extend(1.0)).with_translation(translation),
+        Transform::from_scale(scale.extend(1.0)).with_translation(translation),
         Sprite {
             image: slime_assets.slime.clone(),
             ..default()
         },
-        BossControllerBundle::new(Collider::circle(30.0)),
+        BossControllerBundle::new(Collider::circle(30.0), scale),
         Health::new(CHARACTER_HEALTH),
         Friction::ZERO.with_combine_rule(CoefficientCombine::Min),
         Restitution::ZERO.with_combine_rule(CoefficientCombine::Min),
@@ -72,28 +73,15 @@ impl BossController {
 /// kinematic character controller.
 #[derive(Bundle)]
 pub struct BossControllerBundle {
-    slime_controller: BossController,
-    body: RigidBody,
-    collider: Collider,
-    ground_caster: ShapeCaster,
-    locked_axes: LockedAxes,
+    boss_controller: BossController,
     physics: CreaturePhysicsBundle,
 }
 
 impl BossControllerBundle {
-    pub fn new(collider: Collider) -> Self {
-        // Create shape caster as a slightly smaller version of collider
-        let mut caster_shape = collider.clone();
-        caster_shape.set_scale(Vector::ONE * 0.99, 10);
-
+    pub fn new(collider: Collider, scale: Vector) -> Self {
         Self {
-            slime_controller: BossController::new(),
-            body: RigidBody::Dynamic,
-            collider,
-            ground_caster: ShapeCaster::new(caster_shape, Vector::ZERO, 0.0, Dir2::NEG_Y)
-                .with_max_distance(10.0),
-            locked_axes: LockedAxes::ROTATION_LOCKED,
-            physics: CreaturePhysicsBundle::new(MOVEMENT_DAMPING, MAX_SLOPE_ANGLE),
+            boss_controller: BossController::new(),
+            physics: CreaturePhysicsBundle::new(collider, scale, MOVEMENT_DAMPING, MAX_SLOPE_ANGLE),
         }
     }
 }

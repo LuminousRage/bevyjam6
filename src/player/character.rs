@@ -1,4 +1,4 @@
-use avian2d::prelude::*;
+use avian2d::{math::Vector, prelude::*};
 use bevy::{prelude::*, sprite::Anchor};
 
 use crate::{
@@ -84,7 +84,7 @@ pub fn player(
             image_mode: SpriteImageMode::Scale(ScalingMode::FitCenter),
             ..default()
         },
-        CharacterControllerBundle::new(Collider::capsule(15.0, 135.0)),
+        CharacterControllerBundle::new(Collider::capsule(15.0, 135.0), Vector::ONE),
         Health::new(CHARACTER_HEALTH),
         Friction::ZERO.with_combine_rule(CoefficientCombine::Min),
         Restitution::ZERO.with_combine_rule(CoefficientCombine::Min),

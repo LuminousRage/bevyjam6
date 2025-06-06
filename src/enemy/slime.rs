@@ -39,14 +39,15 @@ impl FromWorld for SlimeAssets {
 }
 
 pub fn slime(slime_assets: &SlimeAssets, translation: Vec3) -> impl Bundle {
+    let scale = Vec2::splat(0.5);
     (
         Name::new("Slime"),
-        Transform::from_scale(Vec2::splat(0.5).extend(1.0)).with_translation(translation),
+        Transform::from_scale(scale.extend(1.0)).with_translation(translation),
         Sprite {
             image: slime_assets.slime.clone(),
             ..default()
         },
-        SlimeControllerBundle::new(Collider::circle(30.0)),
+        SlimeControllerBundle::new(Collider::circle(30.0), scale),
         Health::new(CHARACTER_HEALTH),
         Friction::ZERO.with_combine_rule(CoefficientCombine::Min),
         Restitution::ZERO.with_combine_rule(CoefficientCombine::Min),
@@ -78,28 +79,14 @@ impl SlimeController {
 #[derive(Bundle)]
 pub struct SlimeControllerBundle {
     slime_controller: SlimeController,
-    body: RigidBody,
-    collider: Collider,
-    ground_caster: ShapeCaster,
-    locked_axes: LockedAxes,
     physics: CreaturePhysicsBundle,
 }
 
 impl SlimeControllerBundle {
-    pub fn new(collider: Collider) -> Self {
-        // Create shape caster as a slightly smaller version of collider
-        let mut caster_shape = collider.clone();
-        caster_shape.set_scale(Vector::ONE * 0.99, 10);
-
+    pub fn new(collider: Collider, scale: Vector) -> Self {
         Self {
             slime_controller: SlimeController::new(),
-            body: RigidBody::Dynamic,
-            collider,
-            ground_caster: ShapeCaster::new(caster_shape, Vector::ZERO, 0.0, Dir2::NEG_Y)
-                .with_max_distance(10.0)
-                .with_query_filter(SpatialQueryFilter::from_mask(GameLayer::Ground)),
-            locked_axes: LockedAxes::ROTATION_LOCKED,
-            physics: CreaturePhysicsBundle::new(MOVEMENT_DAMPING, MAX_SLOPE_ANGLE),
+            physics: CreaturePhysicsBundle::new(collider, scale, MOVEMENT_DAMPING, MAX_SLOPE_ANGLE),
         }
     }
 }
@@ -124,6 +111,11 @@ fn enemy_decision_making(
         let target_length = target_coords.x - pos.translation.x;
         let target_height = (target_coords.y - pos.translation.y)
             .min(0.5 * JUMP_IMPULSE.powf(2.0) / GRAVITY_ACCELERATION);
+        dbg!(is_grounded);
+        dbg!(pos.translation.x);
+        dbg!(pos.translation.y);
+        dbg!(velocity.x);
+        dbg!(velocity.y);
 
         //good time for a jump attack?
         if is_grounded && slime.jump_attack_cooldown <= 0.0 {
@@ -140,6 +132,7 @@ fn enemy_decision_making(
             continue;
         }
         if is_grounded && slime.jump_attack_cooldown < JUMP_ATTACK_COOLDOWN {
+            dbg!("WHAT");
             velocity.x = 0.0;
         }
     }
