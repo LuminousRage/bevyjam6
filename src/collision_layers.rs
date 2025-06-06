@@ -1,7 +1,7 @@
 use avian2d::prelude::{CollisionLayers, PhysicsLayer};
 
 #[derive(PhysicsLayer, Default)]
-enum GameLayer {
+pub enum GameLayer {
     #[default]
     Default, // Layer 0 - the default layer that objects are assigned to
     Player, // Layer 1

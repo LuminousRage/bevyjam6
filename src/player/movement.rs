@@ -8,6 +8,7 @@ use avian2d::{math::*, prelude::*};
 use bevy::prelude::*;
 
 use crate::{
+    collision_layers::GameLayer,
     physics::creature::{CreaturePhysicsBundle, Flying, Grounded},
     player::{character::Player, configs::DASH_COOLDOWN_DURATION_MILLISECONDS},
 };
@@ -157,7 +158,8 @@ impl CharacterControllerBundle {
             body: RigidBody::Dynamic,
             collider,
             ground_caster: ShapeCaster::new(caster_shape, Vector::ZERO, 0.0, Dir2::NEG_Y)
-                .with_max_distance(10.0),
+                .with_max_distance(10.0)
+                .with_query_filter(SpatialQueryFilter::from_mask(GameLayer::Ground)),
             locked_axes: LockedAxes::ROTATION_LOCKED,
             movement: MovementBundle::new(
                 MOVEMENT_SPEED,

@@ -6,12 +6,12 @@ use bevy::{
 
 use crate::{
     asset_tracking::LoadResource,
-    collision_layers::{enemy_hit_boxes, enemy_hurt_boxes},
+    collision_layers::{GameLayer, enemy_hit_boxes, enemy_hurt_boxes},
     enemy::configs::*,
     health::{Health, hitbox_prefab, hurtbox_prefab},
     physics::{
         configs::GRAVITY_ACCELERATION,
-        creature::{CreaturePhysicsBundle, Grounded},
+        creature::{CreaturePhysicsBundle, Grounded, MovementDampingFactor},
     },
     player::movement::CharacterController,
 };
@@ -51,10 +51,10 @@ pub fn slime(slime_assets: &SlimeAssets, translation: Vec3) -> impl Bundle {
         Friction::ZERO.with_combine_rule(CoefficientCombine::Min),
         Restitution::ZERO.with_combine_rule(CoefficientCombine::Min),
         ColliderDensity(2.0),
-        GravityScale(1.5),
+        GravityScale(1.0),
         children![
             hurtbox_prefab(Collider::circle(30.0), enemy_hurt_boxes(), 0.5),
-            hitbox_prefab(Collider::circle(30.0), enemy_hit_boxes(), 0.5, 10.0)
+            hitbox_prefab(Collider::circle(40.0), enemy_hit_boxes(), 0.5, 10.0)
         ],
     )
 }
@@ -96,7 +96,8 @@ impl SlimeControllerBundle {
             body: RigidBody::Dynamic,
             collider,
             ground_caster: ShapeCaster::new(caster_shape, Vector::ZERO, 0.0, Dir2::NEG_Y)
-                .with_max_distance(10.0),
+                .with_max_distance(10.0)
+                .with_query_filter(SpatialQueryFilter::from_mask(GameLayer::Ground)),
             locked_axes: LockedAxes::ROTATION_LOCKED,
             physics: CreaturePhysicsBundle::new(MOVEMENT_DAMPING, MAX_SLOPE_ANGLE),
         }
@@ -130,17 +131,15 @@ fn enemy_decision_making(
                 + sqrt(JUMP_IMPULSE.powf(2.0) - 2.0 * GRAVITY_ACCELERATION * target_height))
                 / GRAVITY_ACCELERATION;
             //just assume no dampening
-            let x_velocity_to_reach_target = (target_length / time_til_target).min(MAX_X_VELOCITY);
+            let x_velocity_to_reach_target =
+                (abs(target_length) / time_til_target).min(MAX_X_VELOCITY);
             //ATTACK!!!
             velocity.y += JUMP_IMPULSE;
-            velocity.x = x_velocity_to_reach_target;
+            velocity.x = target_length.signum() * x_velocity_to_reach_target;
             slime.jump_attack_cooldown = JUMP_ATTACK_COOLDOWN + time_til_target;
             continue;
         }
-        if is_grounded {
-            if (slime.jump_attack_cooldown > JUMP_ATTACK_COOLDOWN) {
-                slime.jump_attack_cooldown = JUMP_ATTACK_COOLDOWN;
-            }
+        if is_grounded && slime.jump_attack_cooldown < JUMP_ATTACK_COOLDOWN {
             velocity.x = 0.0;
         }
     }
