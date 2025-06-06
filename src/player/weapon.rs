@@ -194,8 +194,6 @@ fn move_weapon_while_attack(
     match &attack.phase {
         AttackPhase::Reacting(timer) => {
             let transparency = color_with_transparency(timer_to_transparency(timer));
-            dbg!(transparency.alpha());
-
             following_parts.iter_mut().for_each(|mut sprite| {
                 sprite.color = transparency;
             });

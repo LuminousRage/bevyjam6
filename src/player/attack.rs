@@ -21,7 +21,7 @@ pub(super) fn plugin(app: &mut App) {
                 gamepad_attack_input,
                 player_attack_direction,
             ),
-            (attack_kickstart, attack_timer_handler, do_attack).chain(),
+            (attack_handler, do_attack).chain(),
         )
             .chain(),
     );
@@ -92,15 +92,6 @@ impl AttackPhase {
             }
         }
     }
-
-    pub fn finished(&self, attack_finished: bool) -> bool {
-        match self {
-            AttackPhase::Reacting(timer) => timer.finished(),
-            AttackPhase::Attacking => attack_finished,
-            AttackPhase::Ready(timer) => timer.finished(),
-            AttackPhase::Cooling(timer) => timer.finished(),
-        }
-    }
 }
 
 impl Default for Attack {
@@ -132,64 +123,29 @@ impl Attack {
                 (self.extend_scale * SCALE_INCREASE_FACTOR).min(INITIAL_EXTEND_SCALE);
         };
     }
-
-    // Triggers an attack action - this should decrease the cooldown and reset everything.
-    // pub fn update_cooldown_timer(&mut self, decrease_cooldown: bool) {
-    //     // that u128 duration cast to f64 should be fine
-    //     // because it should never be bigger than INITIAL_ATTACK_COOLDOWN_MILLISECONDS
-    //     let current_cooldown = self.attack_delay.duration().as_millis() as f64;
-
-    //     let (new_cooldown, new_extend_scale) = if decrease_cooldown {
-    //         let decreased_cooldown = current_cooldown * COOLDOWN_DECREASE_FACTOR;
-    //         let new_cooldown =
-    //             (decreased_cooldown.round() as u64).max(MINIMUM_ATTACK_COOLDOWN_MILLISECONDS);
-    //         let new_extend_scale =
-    //             (self.extend_scale * SCALE_DECREASE_FACTOR).max(MINIMUM_EXTEND_SCALE);
-    //         (new_cooldown, new_extend_scale)
-    //     } else {
-    //         let increased_cooldown = current_cooldown * COOLDOWN_INCREASE_FACTOR;
-    //         let new_cooldown =
-    //             (increased_cooldown.round() as u64).min(INITIAL_ATTACK_COOLDOWN_MILLISECONDS);
-    //         let new_extend_scale =
-    //             (self.extend_scale * SCALE_INCREASE_FACTOR).min(INITIAL_EXTEND_SCALE);
-    //         (new_cooldown, new_extend_scale)
-    //     };
-    //     *self = Attack::new(new_cooldown, new_extend_scale, false);
-    // }
 }
 
-// i think separating might help with testing
-/// Initialise attack component for idle players
-fn attack_kickstart(
-    mut commands: Commands,
-    mut input_event: EventReader<InputAttackEvent>,
-    mut attack_event: EventWriter<DoAttackEvent>,
-    player: Single<Entity, (With<Player>, Without<Attack>)>,
-) {
-    // Consume events so we don't block. but also we don't really care how many events get triggered
-    let mut has_attack_input = false;
-    for _ in input_event.read() {
-        has_attack_input = true;
-    }
-
-    if has_attack_input {
-        commands.entity(*player).insert(Attack::default());
-        attack_event.write(DoAttackEvent);
-    }
-}
-
-fn attack_timer_handler(
-    mut player: Single<(&mut Attack, Entity), With<Player>>,
+fn attack_handler(
+    mut player: Single<(Option<&mut Attack>, Entity), With<Player>>,
     mut input_event: EventReader<InputAttackEvent>,
     mut attack_event: EventWriter<DoAttackEvent>,
     mut commands: Commands,
     time: Res<Time>,
 ) {
-    let (attack, entity) = &mut *player;
-    attack.phase.tick(time.delta());
-
     // Loop so we consume events and don't block. but also we don't really care how many events get triggered
     let has_attack_input = input_event.read().fold(false, |acc, _| acc || true);
+
+    let (attack_component, entity) = &mut *player;
+    let attack = match attack_component {
+        Some(a) => a,
+        None => {
+            commands.entity(*entity).insert(Attack::default());
+            attack_event.write(DoAttackEvent);
+            return;
+        }
+    };
+
+    attack.phase.tick(time.delta());
 
     match &mut attack.phase {
         AttackPhase::Reacting(timer) => {
