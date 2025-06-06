@@ -11,7 +11,6 @@ use super::{
 
 pub(super) fn plugin(app: &mut App) {
     app.add_event::<InputAttackEvent>();
-    app.add_event::<DoAttackEvent>();
     app.add_event::<AttackDirection>();
     app.add_systems(
         Update,
@@ -43,9 +42,6 @@ const COOLDOWN_DECREASE_FACTOR: f32 = 0.8;
 pub struct InputAttackEvent;
 
 #[derive(Event)]
-pub struct DoAttackEvent;
-
-#[derive(Event)]
 pub struct AttackDirection(pub Vec2);
 
 #[derive(Component)]
@@ -56,6 +52,23 @@ pub struct Attack {
     pub attack_delay: f32,
     /// Weapon size multiplier
     pub extend_scale: f32,
+    pub attack_position: AttackPosition,
+}
+
+#[derive(Default)]
+pub enum AttackPosition {
+    #[default]
+    Up,
+    Down,
+}
+
+impl AttackPosition {
+    pub fn vector(&self, attack_direction: Vec2) -> Vec2 {
+        match self {
+            AttackPosition::Up => Vec2::Y * attack_direction.y.signum(),
+            AttackPosition::Down => Vec2::NEG_Y * attack_direction.y.signum(),
+        }
+    }
 }
 
 pub enum AttackPhase {
@@ -106,6 +119,7 @@ impl Attack {
             phase: AttackPhase::default(),
             attack_delay,
             extend_scale,
+            attack_position: AttackPosition::default(),
         }
     }
 
@@ -129,7 +143,6 @@ impl Attack {
 fn attack_handler(
     mut player: Single<(Option<&mut Attack>, Entity), With<Player>>,
     mut input_event: EventReader<InputAttackEvent>,
-    mut attack_event: EventWriter<DoAttackEvent>,
     mut commands: Commands,
     time: Res<Time>,
 ) {
@@ -140,8 +153,9 @@ fn attack_handler(
     let attack = match attack_component {
         Some(a) => a,
         None => {
-            commands.entity(*entity).insert(Attack::default());
-            attack_event.write(DoAttackEvent);
+            if has_attack_input {
+                commands.entity(*entity).insert(Attack::default());
+            }
             return;
         }
     };
@@ -153,7 +167,6 @@ fn attack_handler(
             if timer.just_finished() {
                 attack.update_fury(true);
                 attack.phase = AttackPhase::Attacking;
-                attack_event.write(DoAttackEvent);
             }
         }
         // Attacking is handled by animation
@@ -168,7 +181,6 @@ fn attack_handler(
             } else if has_attack_input {
                 attack.update_fury(true);
                 attack.phase = AttackPhase::Attacking;
-                attack_event.write(DoAttackEvent);
             }
         }
         AttackPhase::Cooling(timer) => {
@@ -177,14 +189,18 @@ fn attack_handler(
             } else if has_attack_input {
                 attack.update_fury(false);
                 attack.phase = AttackPhase::Attacking;
-                attack_event.write(DoAttackEvent);
             }
         }
     }
 }
 
-fn do_attack(mut attack_event: EventReader<DoAttackEvent>) {
-    for _ in attack_event.read() {}
+fn do_attack(mut player: Single<(&mut Attack, Entity), With<Player>>) {
+    let (attack, entity) = &mut *player;
+
+    if let AttackPhase::Attacking = attack.phase {
+        attack.phase =
+            AttackPhase::Ready(Timer::from_seconds(ATTACK_PERIOD_SECONDS, TimerMode::Once));
+    }
 }
 
 fn player_attack_direction(
