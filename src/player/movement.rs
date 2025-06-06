@@ -8,6 +8,7 @@ use avian2d::{math::*, prelude::*};
 use bevy::prelude::*;
 
 use crate::{
+    collision_layers::GameLayer,
     physics::creature::{CreaturePhysicsBundle, Flying, Grounded},
     player::{character::Player, configs::DASH_COOLDOWN_DURATION_MILLISECONDS},
 };
@@ -116,15 +117,11 @@ pub struct JumpImpulse(Scalar);
 #[derive(Bundle)]
 pub struct CharacterControllerBundle {
     character_controller: CharacterController,
-    body: RigidBody,
-    collider: Collider,
-    ground_caster: ShapeCaster,
-    locked_axes: LockedAxes,
     movement: MovementBundle,
 }
 
 /// A bundle that contains components for character movement.
-#[derive(Bundle, Reflect)]
+#[derive(Bundle)]
 pub struct MovementBundle {
     desired_speed: MovementSpeed,
     jump_impulse: JumpImpulse,
@@ -132,7 +129,9 @@ pub struct MovementBundle {
 }
 
 impl MovementBundle {
-    pub const fn new(
+    pub fn new(
+        collider: Collider,
+        scale: Vector,
         acceleration: Scalar,
         damping: Scalar,
         jump_impulse: Scalar,
@@ -141,25 +140,18 @@ impl MovementBundle {
         Self {
             desired_speed: MovementSpeed(acceleration),
             jump_impulse: JumpImpulse(jump_impulse),
-            physics: CreaturePhysicsBundle::new(damping, max_slope_angle),
+            physics: CreaturePhysicsBundle::new(collider, scale, damping, max_slope_angle),
         }
     }
 }
 
 impl CharacterControllerBundle {
-    pub fn new(collider: Collider) -> Self {
-        // Create shape caster as a slightly smaller version of collider
-        let mut caster_shape = collider.clone();
-        caster_shape.set_scale(Vector::ONE * 0.99, 10);
-
+    pub fn new(collider: Collider, scale: Vector) -> Self {
         Self {
             character_controller: CharacterController,
-            body: RigidBody::Dynamic,
-            collider,
-            ground_caster: ShapeCaster::new(caster_shape, Vector::ZERO, 0.0, Dir2::NEG_Y)
-                .with_max_distance(10.0),
-            locked_axes: LockedAxes::ROTATION_LOCKED,
             movement: MovementBundle::new(
+                collider,
+                scale,
                 MOVEMENT_SPEED,
                 MOVEMENT_DAMPING,
                 JUMP_IMPULSE,
@@ -233,6 +225,7 @@ fn movement(
                         linear_velocity.y *= 0.5;
                     }
                 }
+                //TODO:only one dash in air, reset when grounded
                 MovementAction::Dash => {
                     if is_dashing {
                         // Already dashing, do nothing

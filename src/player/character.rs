@@ -1,7 +1,12 @@
-use avian2d::prelude::*;
+use avian2d::{math::Vector, prelude::*};
 use bevy::{prelude::*, sprite::Anchor};
 
-use crate::{asset_tracking::LoadResource, health::Health, physics::creature::Grounded};
+use crate::{
+    asset_tracking::LoadResource,
+    collision_layers::{player_hit_boxes, player_hurt_boxes},
+    health::{Health, hitbox_prefab, hurtbox_prefab},
+    physics::creature::Grounded,
+};
 
 use super::{
     configs::{CHARACTER_GRAVITY_SCALE, CHARACTER_HEALTH},
@@ -79,11 +84,16 @@ pub fn player(
             image_mode: SpriteImageMode::Scale(ScalingMode::FitCenter),
             ..default()
         },
-        CharacterControllerBundle::new(Collider::capsule(15.0, 135.0)),
+        CharacterControllerBundle::new(Collider::capsule(15.0, 135.0), Vector::ONE),
         Health::new(CHARACTER_HEALTH),
         Friction::ZERO.with_combine_rule(CoefficientCombine::Min),
         Restitution::ZERO.with_combine_rule(CoefficientCombine::Min),
         ColliderDensity(2.0),
         GravityScale(CHARACTER_GRAVITY_SCALE),
+        children![hurtbox_prefab(
+            Collider::capsule(30.0, 135.0),
+            player_hurt_boxes(),
+            0.5
+        )],
     )
 }

@@ -7,6 +7,8 @@ use bevy::{
     prelude::*,
 };
 
+use crate::collision_layers::GameLayer;
+
 pub(super) fn plugin(app: &mut App) {
     app.add_systems(Update, (update_grounded, apply_movement_damping))
         .register_type::<MovementDampingFactor>()
@@ -34,17 +36,31 @@ pub struct MovementDampingFactor(Scalar);
 #[reflect(Component)]
 pub struct MaxSlopeAngle(Scalar);
 /// A bundle that contains creature physics.
-#[derive(Bundle, Reflect)]
+#[derive(Bundle)]
 pub struct CreaturePhysicsBundle {
     damping: MovementDampingFactor,
     max_slope_angle: MaxSlopeAngle,
+    body: RigidBody,
+    collider: Collider,
+    ground_caster: ShapeCaster,
+    locked_axes: LockedAxes,
 }
 /// A bundle that contains creature physics.
 impl CreaturePhysicsBundle {
-    pub const fn new(damping: f32, max_slope_angle: f32) -> Self {
+    pub fn new(collider: Collider, scale: Vector, damping: f32, max_slope_angle: f32) -> Self {
+        // Create shape caster as a slightly smaller version of collider
+        let mut caster_shape = collider.clone();
+        caster_shape.set_scale(scale * 0.99, 10);
+
         Self {
             damping: MovementDampingFactor(damping),
             max_slope_angle: MaxSlopeAngle(max_slope_angle),
+            body: RigidBody::Dynamic,
+            collider,
+            ground_caster: ShapeCaster::new(caster_shape, Vector::ZERO, 0.0, Dir2::NEG_Y)
+                .with_max_distance(10.0)
+                .with_query_filter(SpatialQueryFilter::from_mask(GameLayer::Ground)),
+            locked_axes: LockedAxes::ROTATION_LOCKED,
         }
     }
 }

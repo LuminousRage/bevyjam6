@@ -5,10 +5,11 @@
 
 mod asset_tracking;
 mod audio;
+mod camera;
+mod collision_layers;
 #[cfg(feature = "dev")]
 mod dev_tools;
-// mod enemy;
-mod camera;
+mod enemy;
 mod health;
 mod level;
 mod menus;
@@ -66,9 +67,9 @@ impl Plugin for AppPlugin {
             // menus::plugin,
             screens::plugin,
             theme::plugin,
-            player::plugin,
-            // enemy::plugin,
             health::plugin,
+            player::plugin,
+            enemy::plugin,
             camera::plugin,
         ));
 
