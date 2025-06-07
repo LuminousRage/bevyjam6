@@ -7,6 +7,7 @@ use crate::{
     animation::reversible_animation,
     asset_tracking::LoadResource,
     collision_layers::{enemy_hit_boxes, enemy_hurt_boxes},
+    enemy::boss::BossController,
     health::{hitbox_prefab, hurtbox_prefab},
     player::character::Player,
 };
@@ -166,6 +167,7 @@ fn update_eye_animation(
         Without<Player>,
     >,
     player: Single<&Transform, With<Player>>,
+    boss: Single<&BossController>,
     time: Res<Time>,
 ) {
     for (mut sprite, mut transform, global_transform, mut animation, name) in &mut query {
@@ -175,8 +177,15 @@ fn update_eye_animation(
             //Marker? I hardly know 'er
             match name.as_str() {
                 "Pupil" => {
-                    let dir =
-                        player.translation.truncate() - global_transform.translation().truncate();
+                    if boss.beam_lazer_remaining_duration > 0.0 {
+                        continue;
+                    }
+                    let dir = if boss.sky_lazer_remaining_duration > 0.0 {
+                        Vec2::new(0., 1.)
+                    } else {
+                        player.translation.truncate() - global_transform.translation().truncate()
+                    };
+
                     let target = (&dir.normalize_or_zero() * 50.0).extend(1.0);
                     transform
                         .translation
