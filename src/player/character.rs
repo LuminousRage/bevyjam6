@@ -120,7 +120,7 @@ pub fn player(
             player_assets,
             player_layout_assets,
         ),
-        MovementBundle::new_with_defaults(Collider::capsule(15.0, 135.0), Vector::ONE),
+        MovementBundle::new(Collider::capsule(15.0, 135.0), Vector::ONE),
         Health::new(CHARACTER_HEALTH),
         Friction::ZERO.with_combine_rule(CoefficientCombine::Min),
         Restitution::ZERO.with_combine_rule(CoefficientCombine::Min),

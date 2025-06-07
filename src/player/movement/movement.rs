@@ -39,8 +39,6 @@ pub(super) fn plugin(app: &mut App) {
             handle_jump_end,
         ),
     );
-    app.register_type::<JumpImpulse>()
-        .register_type::<MovementSpeed>();
 }
 
 /// An event sent for a movement input action.
@@ -86,51 +84,19 @@ impl Jumping {
     }
 }
 
-/// The desired movement speed of the character.
-#[derive(Component, Reflect)]
-#[reflect(Component)]
-pub struct MovementSpeed(Scalar);
-
-/// The strength of a jump.
-#[derive(Component, Reflect)]
-#[reflect(Component)]
-pub struct JumpImpulse(Scalar);
-
 /// A bundle that contains components for character movement.
 #[derive(Bundle)]
 pub struct MovementBundle {
-    desired_speed: MovementSpeed,
-    jump_impulse: JumpImpulse,
     physics: CreaturePhysicsBundle,
     dashing: Dashing,
 }
 
 impl MovementBundle {
-    pub fn new(
-        collider: Collider,
-        scale: Vector,
-        acceleration: Scalar,
-        damping: Scalar,
-        jump_impulse: Scalar,
-        max_slope_angle: Scalar,
-    ) -> Self {
+    pub fn new(collider: Collider, scale: Vector) -> Self {
         Self {
-            desired_speed: MovementSpeed(acceleration),
-            jump_impulse: JumpImpulse(jump_impulse),
-            physics: CreaturePhysicsBundle::new(collider, scale, damping, max_slope_angle),
+            physics: CreaturePhysicsBundle::new(collider, scale, MOVEMENT_DAMPING, MAX_SLOPE_ANGLE),
             dashing: Dashing::new(),
         }
-    }
-
-    pub fn new_with_defaults(collider: Collider, scale: Vector) -> Self {
-        MovementBundle::new(
-            collider,
-            scale,
-            MOVEMENT_SPEED,
-            MOVEMENT_DAMPING,
-            JUMP_IMPULSE,
-            MAX_SLOPE_ANGLE,
-        )
     }
 }
 
@@ -142,8 +108,6 @@ fn movement(
     mut movement_event_reader: EventReader<MovementAction>,
     mut controllers: Query<(
         Entity,
-        &MovementSpeed,
-        &JumpImpulse,
         &mut Player,
         &mut LinearVelocity,
         Has<Grounded>,
@@ -159,8 +123,6 @@ fn movement(
     for event in movement_event_reader.read() {
         for (
             entity,
-            movement_speed,
-            jump_impulse,
             mut player,
             mut linear_velocity,
             is_grounded,
@@ -175,7 +137,7 @@ fn movement(
                         continue;
                     }
                     player.face_direction = *direction;
-                    let desired_speed = direction.x * movement_speed.0 - linear_velocity.x;
+                    let desired_speed = direction.x * MOVEMENT_SPEED - linear_velocity.x;
                     linear_velocity.x += desired_speed * 10. * delta_time;
                 }
                 MovementAction::JumpStart => {
@@ -186,7 +148,7 @@ fn movement(
                         commands
                             .entity(entity)
                             .insert(Jumping::new(JUMP_DURATION_MILLISECONDS));
-                        linear_velocity.y += jump_impulse.0;
+                        linear_velocity.y += JUMP_IMPULSE;
                         gravity.0 = 0.5;
                     }
                 }
@@ -208,7 +170,7 @@ fn movement(
                     }
                     commands.entity(entity).insert(Flying);
                     linear_velocity.x =
-                        player.face_direction.x * movement_speed.0 * DASH_SPEED_MODIFIER;
+                        player.face_direction.x * MOVEMENT_SPEED * DASH_SPEED_MODIFIER;
                     linear_velocity.y = 0.0;
                     gravity.0 = 0.0;
                     dashing.current_cooldown = DASH_COOLDOWN_DURATION;
