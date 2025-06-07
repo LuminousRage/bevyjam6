@@ -4,7 +4,7 @@ use bevy::prelude::*;
 
 use crate::{
     physics::creature::Grounded,
-    player::{character::Player, movement::movement::Jumping},
+    player::{character::Player, movement::jumping::Jumping},
 };
 
 #[derive(Component)]

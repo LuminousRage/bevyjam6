@@ -5,8 +5,8 @@ use crate::{
     animation::{Animation, reversible_animation},
     physics::creature::Grounded,
     player::{
-        character::{Player, PlayerAssets, PlayerLayoutAssets, PlayerSpriteMode, player_sprite},
-        movement::movement::{Dashing, MovementAction},
+        character::{Player, PlayerAssets, PlayerLayoutAssets, PlayerSpriteMode},
+        movement::{dashing::Dashing, movement::MovementAction},
     },
 };
 const IDLE_FRAME_NUM: usize = 10;

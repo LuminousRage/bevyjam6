@@ -2,8 +2,6 @@
 //! Heavily referencing (aka plagiarising/copying)
 //! https://github.com/Jondolf/avian/blob/main/crates/avian2d/examples/dynamic_character_2d/plugin.rs
 
-use std::time::Duration;
-
 use avian2d::{math::*, prelude::*};
 use bevy::prelude::*;
 
@@ -17,27 +15,27 @@ use crate::{
             MOVEMENT_SPEED,
         },
         input::{gamepad_movement_input, keyboard_movement_input},
-        movement::coyote::{Coyote, detect_coyote_time_start, handle_coyote_time},
+        movement::{
+            coyote::{Coyote, detect_coyote_time_start, handle_coyote_time},
+            dashing::Dashing,
+            jumping::Jumping,
+        },
     },
 };
 
 pub(super) fn plugin(app: &mut App) {
     app.add_event::<MovementAction>().add_systems(
         Update,
-        (
+        ((
             (
-                (
-                    keyboard_movement_input,
-                    gamepad_movement_input,
-                    detect_coyote_time_start,
-                    handle_coyote_time,
-                ),
-                movement,
-            )
-                .chain(),
-            handle_dashing,
-            handle_jump_end,
-        ),
+                keyboard_movement_input,
+                gamepad_movement_input,
+                detect_coyote_time_start,
+                handle_coyote_time,
+            ),
+            movement,
+        )
+            .chain(),),
     );
 }
 
@@ -48,40 +46,6 @@ pub enum MovementAction {
     JumpStart,
     JumpEnd,
     Dash,
-}
-
-#[derive(Component)]
-#[component(storage = "SparseSet")]
-pub struct Dashing {
-    current_duration: f32,
-    current_cooldown: f32,
-    used: bool,
-}
-
-impl Dashing {
-    fn new() -> Dashing {
-        Self {
-            current_duration: 0.0,
-            current_cooldown: 0.0,
-            used: false,
-        }
-    }
-}
-
-#[derive(Component)]
-#[component(storage = "SparseSet")]
-pub struct Jumping {
-    duration: Timer,
-    cooldown: Timer,
-}
-
-impl Jumping {
-    fn new(duration: u64) -> Jumping {
-        Self {
-            duration: Timer::new(Duration::from_millis(duration), TimerMode::Once),
-            cooldown: Timer::new(Duration::from_millis(100), TimerMode::Once),
-        }
-    }
 }
 
 /// A bundle that contains components for character movement.
@@ -178,51 +142,6 @@ fn movement(
                     dashing.used = true;
                 }
             }
-        }
-    }
-}
-
-fn handle_jump_end(
-    time: Res<Time>,
-    mut commands: Commands,
-    mut query: Query<(Entity, &mut Jumping, &mut GravityScale, &mut LinearVelocity)>,
-) {
-    for (entity, mut jumping, mut gravity_scale, mut linear_velocity) in &mut query {
-        jumping.duration.tick(time.delta());
-
-        if jumping.duration.just_finished() {
-            commands.entity(entity).remove::<Jumping>();
-            gravity_scale.0 = CHARACTER_GRAVITY_SCALE;
-            linear_velocity.y *= 0.5;
-        }
-    }
-}
-
-// maybe use an event for this, so collisions/damage can cancel dash
-fn handle_dashing(
-    time: Res<Time>,
-    mut commands: Commands,
-    mut query: Query<(
-        Entity,
-        &mut Dashing,
-        &mut GravityScale,
-        &mut LinearVelocity,
-        Has<Grounded>,
-    )>,
-) {
-    for (entity, mut dashing, mut gravity_scale, mut linear_velocity, is_grounded) in &mut query {
-        let delta = time.delta().as_secs_f32().adjust_precision();
-        dashing.current_cooldown -= delta;
-        dashing.current_duration -= delta;
-
-        if dashing.current_duration <= 0.0 && dashing.current_duration + delta > 0.0 {
-            commands.entity(entity).remove::<Flying>();
-            gravity_scale.0 = CHARACTER_GRAVITY_SCALE;
-            linear_velocity.x *= 0.4;
-        }
-
-        if is_grounded {
-            dashing.used = false;
         }
     }
 }
