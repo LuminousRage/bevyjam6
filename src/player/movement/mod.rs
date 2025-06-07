@@ -1,3 +1,4 @@
+mod coyote;
 pub mod movement;
 pub mod movement_visual;
 

@@ -6,7 +6,7 @@ use crate::{
     collision_layers::player_hurt_boxes,
     health::{Health, hurtbox_prefab},
     physics::creature::Grounded,
-    player::movement::movement::CharacterControllerBundle,
+    player::movement::movement::MovementBundle,
 };
 
 use super::configs::{CHARACTER_GRAVITY_SCALE, CHARACTER_HEALTH};
@@ -120,7 +120,7 @@ pub fn player(
             player_assets,
             player_layout_assets,
         ),
-        CharacterControllerBundle::new(Collider::capsule(15.0, 135.0), Vector::ONE),
+        MovementBundle::new_with_defaults(Collider::capsule(15.0, 135.0), Vector::ONE),
         Health::new(CHARACTER_HEALTH),
         Friction::ZERO.with_combine_rule(CoefficientCombine::Min),
         Restitution::ZERO.with_combine_rule(CoefficientCombine::Min),

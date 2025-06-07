@@ -17,6 +17,7 @@ use crate::{
             MOVEMENT_SPEED,
         },
         input::{gamepad_movement_input, keyboard_movement_input},
+        movement::coyote::{Coyote, detect_coyote_time_start, handle_coyote_time},
     },
 };
 
@@ -85,16 +86,6 @@ impl Jumping {
     }
 }
 
-#[derive(Component)]
-#[component(storage = "SparseSet")]
-pub struct Coyote(Timer);
-
-impl Coyote {
-    fn new(duration: u64) -> Coyote {
-        Self(Timer::new(Duration::from_millis(duration), TimerMode::Once))
-    }
-}
-
 /// The desired movement speed of the character.
 #[derive(Component, Reflect)]
 #[reflect(Component)]
@@ -104,13 +95,6 @@ pub struct MovementSpeed(Scalar);
 #[derive(Component, Reflect)]
 #[reflect(Component)]
 pub struct JumpImpulse(Scalar);
-
-/// A bundle that contains the components needed for a basic
-/// kinematic character controller.
-#[derive(Bundle)]
-pub struct CharacterControllerBundle {
-    movement: MovementBundle,
-}
 
 /// A bundle that contains components for character movement.
 #[derive(Bundle)]
@@ -137,20 +121,16 @@ impl MovementBundle {
             dashing: Dashing::new(),
         }
     }
-}
 
-impl CharacterControllerBundle {
-    pub fn new(collider: Collider, scale: Vector) -> Self {
-        Self {
-            movement: MovementBundle::new(
-                collider,
-                scale,
-                MOVEMENT_SPEED,
-                MOVEMENT_DAMPING,
-                JUMP_IMPULSE,
-                MAX_SLOPE_ANGLE,
-            ),
-        }
+    pub fn new_with_defaults(collider: Collider, scale: Vector) -> Self {
+        MovementBundle::new(
+            collider,
+            scale,
+            MOVEMENT_SPEED,
+            MOVEMENT_DAMPING,
+            JUMP_IMPULSE,
+            MAX_SLOPE_ANGLE,
+        )
     }
 }
 
@@ -236,35 +216,6 @@ fn movement(
                     dashing.used = true;
                 }
             }
-        }
-    }
-}
-
-pub fn detect_coyote_time_start(
-    entity: Single<
-        Entity,
-        (
-            With<Player>,
-            With<Grounded>,
-            Without<Coyote>,
-            Without<Jumping>,
-        ),
-    >,
-    mut commands: Commands,
-) {
-    commands.entity(*entity).insert(Coyote::new(200));
-}
-
-fn handle_coyote_time(
-    time: Res<Time>,
-    mut commands: Commands,
-    mut query: Query<(Entity, &mut Coyote), (Without<Grounded>, With<Player>)>,
-) {
-    for (entity, mut coyote) in &mut query {
-        coyote.0.tick(time.delta());
-
-        if coyote.0.finished() {
-            commands.entity(entity).remove::<Coyote>();
         }
     }
 }
