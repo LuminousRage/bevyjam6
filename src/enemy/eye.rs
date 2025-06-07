@@ -1,8 +1,8 @@
-use std::time::Duration;
+use std::{f32::consts::FRAC_PI_2, time::Duration};
 
 use bevy::prelude::*;
 
-use crate::asset_tracking::LoadResource;
+use crate::{asset_tracking::LoadResource, player::character::Player};
 
 pub(super) fn plugin(app: &mut App) {
     app.register_type::<EyeAssets>();
@@ -26,15 +26,24 @@ pub struct EyeAssets {
     ring: Handle<Image>,
     #[dependency]
     wings: Handle<Image>,
+    #[dependency]
+    red: Handle<Image>,
+    #[dependency]
+    white: Handle<Image>,
+    #[dependency]
+    pupil: Handle<Image>,
 }
 
 impl FromWorld for EyeAssets {
     fn from_world(world: &mut World) -> Self {
         let assets = world.resource::<AssetServer>();
         Self {
-            eye: assets.load("images/boss_eye_main.png"),
-            ring: assets.load("images/boss_eye_ring.png"),
-            wings: assets.load("images/boss_eye_wings.png"),
+            eye: assets.load("images/eye/boss_eye_main.png"),
+            ring: assets.load("images/eye/boss_eye_ring.png"),
+            wings: assets.load("images/eye/boss_eye_wings.png"),
+            white: assets.load("images/eye/boss_eye_white.png"),
+            red: assets.load("images/eye/boss_eye_red.png"),
+            pupil: assets.load("images/eye/boss_eye_pupil.png"),
         }
     }
 }
@@ -72,7 +81,16 @@ pub fn the_eye(
                 Sprite::from_image(eye_assets.ring.clone()),
                 EyeAnimation::new()
             ),
-            (Name::new("Eye"), Sprite::from_image(eye_assets.eye.clone()),),
+            (
+                Name::new("Eye White"),
+                Sprite::from_image(eye_assets.white.clone())
+            ),
+            (
+                Name::new("Pupil"),
+                Sprite::from_image(eye_assets.pupil.clone()),
+                EyeAnimation::new()
+            ),
+            (Name::new("Eye"), Sprite::from_image(eye_assets.eye.clone())),
         ],
     )
 }
@@ -131,19 +149,32 @@ fn animation_updater(mut query: Query<&mut EyeAnimation>, time: Res<Time>) {
 }
 
 fn update_eye_animation(
-    mut query: Query<(&mut Sprite, &mut Transform, &mut EyeAnimation)>,
+    mut query: Query<(&mut Sprite, &mut Transform, &mut EyeAnimation, &Name), Without<Player>>,
+    player: Single<&Transform, With<Player>>,
     time: Res<Time>,
 ) {
-    for (mut sprite, mut transform, mut animation) in &mut query {
+    for (mut sprite, mut transform, mut animation, name) in &mut query {
         if let Some(atlas) = sprite.texture_atlas.as_mut() {
             atlas.index = animation.frame;
         } else {
-            transform
-                .rotation
-                .smooth_nudge(&animation.target, 0.4, time.delta_secs());
+            match name.as_str() {
+                "Pupil" => {
+                    let dir = -transform.translation.truncate() + player.translation.truncate();
+                    let target = (&dir.normalize_or_zero() * 50.0).extend(1.0);
+                    transform
+                        .translation
+                        .smooth_nudge(&target, 1.2, time.delta_secs());
+                }
+                "Ring" => {
+                    transform
+                        .rotation
+                        .smooth_nudge(&animation.target, 0.4, time.delta_secs());
 
-            if (transform.rotation - animation.target).length() < 0.1 {
-                animation.update_target();
+                    if (transform.rotation - animation.target).length() < 0.1 {
+                        animation.update_target();
+                    }
+                }
+                _ => {}
             }
         };
     }
