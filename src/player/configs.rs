@@ -2,14 +2,14 @@ use avian2d::math::Scalar;
 use bevy::input::keyboard::KeyCode;
 
 pub const MOVEMENT_SPEED: f32 = 500.0;
-pub const DASH_SPEED_MODIFIER: f32 = 130.;
+pub const DASH_SPEED_MODIFIER: f32 = 2.;
 pub const JUMP_IMPULSE: f32 = 1000.0;
 pub const MOVEMENT_DAMPING: f32 = 6.0;
 pub const MAX_SLOPE_ANGLE: f32 = (30.0 as Scalar).to_radians();
 pub const CHARACTER_GRAVITY_SCALE: f32 = 1.5;
-pub const DASH_DURATION_MILLISECONDS: u64 = 216;
+pub const DASH_DURATION: f32 = 0.216;
+pub const DASH_COOLDOWN_DURATION: f32 = 0.300;
 pub const JUMP_DURATION_MILLISECONDS: u64 = 400;
-pub const DASH_COOLDOWN_DURATION_MILLISECONDS: u64 = 300;
 
 pub const CHARACTER_HEALTH: f32 = 100.0;
 

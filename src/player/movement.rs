@@ -10,14 +10,16 @@ use bevy::prelude::*;
 use crate::{
     collision_layers::GameLayer,
     physics::creature::{CreaturePhysicsBundle, Flying, Grounded},
-    player::{character::Player, configs::DASH_COOLDOWN_DURATION_MILLISECONDS},
+    player::{
+        character::Player,
+        configs::{DASH_COOLDOWN_DURATION, DASH_DURATION},
+    },
 };
 
 use super::{
     configs::{
-        CHARACTER_GRAVITY_SCALE, DASH_DURATION_MILLISECONDS, DASH_SPEED_MODIFIER,
-        JUMP_DURATION_MILLISECONDS, JUMP_IMPULSE, MAX_SLOPE_ANGLE, MOVEMENT_DAMPING,
-        MOVEMENT_SPEED,
+        CHARACTER_GRAVITY_SCALE, DASH_SPEED_MODIFIER, JUMP_DURATION_MILLISECONDS, JUMP_IMPULSE,
+        MAX_SLOPE_ANGLE, MOVEMENT_DAMPING, MOVEMENT_SPEED,
     },
     input::{gamepad_movement_input, keyboard_movement_input},
 };
@@ -60,18 +62,17 @@ pub struct CharacterController;
 #[derive(Component)]
 #[component(storage = "SparseSet")]
 pub struct Dashing {
-    duration: Timer,
-    cooldown: Timer,
+    current_duration: f32,
+    current_cooldown: f32,
+    used: bool,
 }
 
 impl Dashing {
-    fn new(duration: u64) -> Dashing {
+    fn new() -> Dashing {
         Self {
-            duration: Timer::new(Duration::from_millis(duration), TimerMode::Once),
-            cooldown: Timer::new(
-                Duration::from_millis(duration + DASH_COOLDOWN_DURATION_MILLISECONDS),
-                TimerMode::Once,
-            ),
+            current_duration: 0.0,
+            current_cooldown: 0.0,
+            used: false,
         }
     }
 }
@@ -126,6 +127,7 @@ pub struct MovementBundle {
     desired_speed: MovementSpeed,
     jump_impulse: JumpImpulse,
     physics: CreaturePhysicsBundle,
+    dashing: Dashing,
 }
 
 impl MovementBundle {
@@ -141,6 +143,7 @@ impl MovementBundle {
             desired_speed: MovementSpeed(acceleration),
             jump_impulse: JumpImpulse(jump_impulse),
             physics: CreaturePhysicsBundle::new(collider, scale, damping, max_slope_angle),
+            dashing: Dashing::new(),
         }
     }
 }
@@ -174,7 +177,7 @@ fn movement(
         &mut Player,
         &mut LinearVelocity,
         Has<Grounded>,
-        Has<Dashing>,
+        &mut Dashing,
         Has<Coyote>,
         &mut GravityScale,
     )>,
@@ -191,14 +194,14 @@ fn movement(
             mut player,
             mut linear_velocity,
             is_grounded,
-            is_dashing,
+            mut dashing,
             is_coyote,
             mut gravity,
         ) in &mut controllers
         {
             match event {
                 MovementAction::Move(direction) => {
-                    if is_dashing {
+                    if dashing.current_duration > 0.0 {
                         continue;
                     }
                     player.face_direction = *direction;
@@ -225,22 +228,22 @@ fn movement(
                         linear_velocity.y *= 0.5;
                     }
                 }
-                //TODO:only one dash in air, reset when grounded
                 MovementAction::Dash => {
-                    if is_dashing {
-                        // Already dashing, do nothing
+                    if dashing.used
+                        || dashing.current_cooldown > 0.0
+                        || dashing.current_duration > 0.0
+                    {
+                        // Can't use dash, do nothing
                         continue;
                     }
-                    commands
-                        .entity(entity)
-                        .insert(Dashing::new(DASH_DURATION_MILLISECONDS))
-                        .insert(Flying);
-                    linear_velocity.x = player.face_direction.x
-                        * movement_speed.0
-                        * DASH_SPEED_MODIFIER
-                        * delta_time;
+                    commands.entity(entity).insert(Flying);
+                    linear_velocity.x =
+                        player.face_direction.x * movement_speed.0 * DASH_SPEED_MODIFIER;
                     linear_velocity.y = 0.0;
                     gravity.0 = 0.0;
+                    dashing.current_cooldown = DASH_COOLDOWN_DURATION;
+                    dashing.current_duration = DASH_DURATION;
+                    dashing.used = true;
                 }
             }
         }
@@ -307,17 +310,18 @@ fn handle_dashing(
     )>,
 ) {
     for (entity, mut dashing, mut gravity_scale, mut linear_velocity, is_grounded) in &mut query {
-        dashing.duration.tick(time.delta());
-        dashing.cooldown.tick(time.delta());
+        let delta = time.delta().as_secs_f32().adjust_precision();
+        dashing.current_cooldown -= delta;
+        dashing.current_duration -= delta;
 
-        if dashing.duration.just_finished() {
+        if dashing.current_duration <= 0.0 && dashing.current_duration + delta > 0.0 {
             commands.entity(entity).remove::<Flying>();
             gravity_scale.0 = CHARACTER_GRAVITY_SCALE;
             linear_velocity.x *= 0.4;
         }
 
-        if dashing.cooldown.finished() && is_grounded {
-            commands.entity(entity).remove::<Dashing>();
+        if is_grounded {
+            dashing.used = false;
         }
     }
 }
