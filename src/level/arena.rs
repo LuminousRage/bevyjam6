@@ -58,7 +58,7 @@ pub fn spawn_level(
 ) {
     commands.spawn((
         Name::new("Background"),
-        Transform::from_xyz(0., 0., -5.),
+        Transform::from_scale(Vec2::splat(1.3).extend(-5.)),
         Sprite::from_image(level_assets.background.clone()),
     ));
 
@@ -83,30 +83,30 @@ pub fn spawn_level(
         Sprite {
             image: level_assets.platform_long.clone(),
             anchor: Anchor::Custom(Vec2::new(0.0, 0.31)),
-            custom_size: Some(Vec2::new(1300.0, 500.0)),
+            custom_size: Some(Vec2::new(1500.0, 500.0)),
             image_mode: SpriteImageMode::Scale(ScalingMode::FitCenter),
             ..default()
         },
-        Transform::from_xyz(0.0, -435.0, 5.0),
+        Transform::from_xyz(0.0, -600.0, 5.0),
         RigidBody::Static,
-        Collider::rectangle(1300.0, 100.0),
+        Collider::rectangle(1500.0, 100.0),
         CollisionLayers::new(GameLayer::Ground, LayerMask::ALL),
     ));
 
     commands.spawn(platform_medium(
         "Platform Left",
-        Transform::from_xyz(-720., -75., 5.),
+        Transform::from_xyz(-820., -205., 5.),
         &level_assets,
     ));
     commands.spawn(platform_medium(
         "Platform Right",
-        Transform::from_xyz(720., -75., 5.),
+        Transform::from_xyz(820., -205., 5.),
         &level_assets,
     ));
 
     commands.spawn(platform_small(
         "Platform Small",
-        Transform::from_xyz(0., 210., 5.),
+        Transform::from_xyz(0., 110., 5.),
         &level_assets,
     ));
 }
