@@ -313,8 +313,6 @@ fn handle_dashing(
         let delta = time.delta().as_secs_f32().adjust_precision();
         dashing.current_cooldown -= delta;
         dashing.current_duration -= delta;
-        dbg!(linear_velocity.x);
-        dbg!(gravity_scale.0);
 
         if dashing.current_duration <= 0.0 && dashing.current_duration + delta > 0.0 {
             commands.entity(entity).remove::<Flying>();
