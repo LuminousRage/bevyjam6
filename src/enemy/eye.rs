@@ -155,17 +155,28 @@ fn animation_updater(mut query: Query<&mut EyeAnimation>, time: Res<Time>) {
 }
 
 fn update_eye_animation(
-    mut query: Query<(&mut Sprite, &mut Transform, &mut EyeAnimation, &Name), Without<Player>>,
+    mut query: Query<
+        (
+            &mut Sprite,
+            &mut Transform,
+            &mut GlobalTransform,
+            &mut EyeAnimation,
+            &Name,
+        ),
+        Without<Player>,
+    >,
     player: Single<&Transform, With<Player>>,
     time: Res<Time>,
 ) {
-    for (mut sprite, mut transform, mut animation, name) in &mut query {
+    for (mut sprite, mut transform, mut global_transform, mut animation, name) in &mut query {
         if let Some(atlas) = sprite.texture_atlas.as_mut() {
             atlas.index = animation.frame;
         } else {
+            //Marker? I hardly know 'er
             match name.as_str() {
                 "Pupil" => {
-                    let dir = -transform.translation.truncate() + player.translation.truncate();
+                    let dir =
+                        -global_transform.translation().truncate() + player.translation.truncate();
                     let target = (&dir.normalize_or_zero() * 50.0).extend(1.0);
                     transform
                         .translation
