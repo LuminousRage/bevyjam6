@@ -73,11 +73,11 @@ impl Plugin for AppPlugin {
             enemy::plugin,
             camera::plugin,
             animation::plugin,
+            level::arena::plugin,
         ));
 
         // pysicks
-        app.insert_resource(ClearColor(Color::srgb(0.05, 0.05, 0.1)))
-            .insert_resource(Gravity(Vector::NEG_Y * GRAVITY_ACCELERATION));
+        app.insert_resource(Gravity(Vector::NEG_Y * GRAVITY_ACCELERATION));
 
         #[cfg(feature = "dev")]
         app.add_plugins((

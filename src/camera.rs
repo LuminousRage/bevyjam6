@@ -9,7 +9,7 @@ pub(super) fn plugin(app: &mut App) {
 
 /// How quickly should the camera snap to the desired location.
 const CAMERA_DECAY_RATE: f32 = 2.;
-const FLOOR_MIN_Y: f32 = 100.0;
+const FLOOR_MIN_Y: f32 = -300.0;
 
 fn spawn_camera(mut commands: Commands) {
     commands.spawn((Name::new("Camera"), Camera2d));
