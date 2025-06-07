@@ -11,16 +11,13 @@ use crate::{
     physics::creature::{CreaturePhysicsBundle, Flying, Grounded},
     player::{
         character::Player,
-        configs::{DASH_COOLDOWN_DURATION, DASH_DURATION},
+        configs::{
+            CHARACTER_GRAVITY_SCALE, DASH_COOLDOWN_DURATION, DASH_DURATION, DASH_SPEED_MODIFIER,
+            JUMP_DURATION_MILLISECONDS, JUMP_IMPULSE, MAX_SLOPE_ANGLE, MOVEMENT_DAMPING,
+            MOVEMENT_SPEED,
+        },
+        input::{gamepad_movement_input, keyboard_movement_input},
     },
-};
-
-use super::{
-    configs::{
-        CHARACTER_GRAVITY_SCALE, DASH_SPEED_MODIFIER, JUMP_DURATION_MILLISECONDS, JUMP_IMPULSE,
-        MAX_SLOPE_ANGLE, MOVEMENT_DAMPING, MOVEMENT_SPEED,
-    },
-    input::{gamepad_movement_input, keyboard_movement_input},
 };
 
 pub(super) fn plugin(app: &mut App) {

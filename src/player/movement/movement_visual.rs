@@ -6,7 +6,7 @@ use crate::{
     physics::creature::Grounded,
     player::{
         character::{Player, PlayerAssets, PlayerLayoutAssets, PlayerSpriteMode, player_sprite},
-        movement::{Dashing, MovementAction},
+        movement::movement::{Dashing, MovementAction},
     },
 };
 const IDLE_FRAME_NUM: usize = 10;

@@ -6,12 +6,10 @@ use crate::{
     collision_layers::player_hurt_boxes,
     health::{Health, hurtbox_prefab},
     physics::creature::Grounded,
+    player::movement::movement::CharacterControllerBundle,
 };
 
-use super::{
-    configs::{CHARACTER_GRAVITY_SCALE, CHARACTER_HEALTH},
-    movement::CharacterControllerBundle,
-};
+use super::configs::{CHARACTER_GRAVITY_SCALE, CHARACTER_HEALTH};
 
 pub(super) fn plugin(app: &mut App) {
     app.register_type::<PlayerAssets>();
