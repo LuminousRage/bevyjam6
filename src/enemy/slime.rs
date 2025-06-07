@@ -84,7 +84,8 @@ pub fn slime(slime_assets: &SlimeAssets, translation: Vec3, is_red: bool) -> imp
                 Collider::circle(60.0),
                 enemy_hit_boxes(),
                 0.5,
-                if is_red { 15.0 } else { 8.0 }
+                if is_red { 15.0 } else { 8.0 },
+                Transform::default(),
             )
         ],
     )

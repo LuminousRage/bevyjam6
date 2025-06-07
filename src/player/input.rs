@@ -2,12 +2,11 @@ use avian2d::math::Scalar;
 use bevy::prelude::*;
 
 use crate::player::{
-    attack::AttackDirection,
+    attack::behaviour::{AttackDirection, InputAttackEvent},
     configs::{KEYBOARD_DOWN, KEYBOARD_UP},
 };
 
 use super::{
-    attack::InputAttackEvent,
     configs::{KEYBOARD_ATTACK, KEYBOARD_DASH, KEYBOARD_JUMP, KEYBOARD_LEFT, KEYBOARD_RIGHT},
     movement::MovementAction,
 };

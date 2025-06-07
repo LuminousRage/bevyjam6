@@ -1,9 +1,11 @@
 use avian2d::prelude::Collider;
-use bevy::{prelude::*, sprite::Anchor};
+use bevy::{math::ops::exp, prelude::*, sprite::Anchor};
 
 use crate::{
-    asset_tracking::LoadResource, collision_layers::player_hit_boxes, health::hitbox_prefab,
-    player::attack::Attack,
+    asset_tracking::LoadResource,
+    collision_layers::player_hit_boxes,
+    health::hitbox_prefab,
+    player::attack::behaviour::{Attack, AttackPhase, DoAttackEvent},
 };
 
 use super::character::Player;
@@ -11,7 +13,14 @@ use super::character::Player;
 pub(super) fn plugin(app: &mut App) {
     app.register_type::<WeaponAssets>();
     app.load_resource::<WeaponAssets>();
-    app.add_systems(Update, (move_weapon, update_weapon_length));
+    app.add_systems(
+        Update,
+        (
+            move_weapon_while_idle,
+            move_weapon_while_attack,
+            update_weapon_length,
+        ),
+    );
 }
 
 // offset in pixels to line up the weapon
@@ -19,7 +28,7 @@ const OFFSET_FROM_BASE: u64 = 898;
 const OFFSET_FROM_EXTEND: u64 = 178;
 const EXTEND_SIZE: u64 = 595;
 const WEAPON_FOLLOW_OFFSET: Vec3 = Vec3::new(55.0, -35.0, -1.0);
-const WEAPON_ATTACK_HORIZONTAL_OFFSET: Vec3 = Vec3::new(-60.0, -40.0, -1.0);
+
 const INACTIVE_WEAPON_TRANSPARENCY: f32 = 0.4;
 
 #[derive(Component)]
@@ -118,66 +127,127 @@ pub fn weapon(player_assets: &WeaponAssets) -> impl Bundle {
                     ..default()
                 },
                 children![hitbox_prefab(
-                    Collider::circle(30.0),
+                    Collider::rectangle(80.0, 110.0),
                     player_hit_boxes(),
                     0.5,
-                    10.0
+                    10.0,
+                    Transform::from_xyz(0.0, 1120.0, 0.0)
                 )]
             )
         ],
     )
 }
 
-fn color_with_transparency(alpha: f32) -> Color {
-    Color::srgba(1.0, 1.0, 1.0, alpha)
-}
-
-fn move_weapon(
+fn move_weapon_while_idle(
     mut following: Single<&mut Transform, With<Weapon>>,
     mut following_parts: Query<&mut Sprite, With<WeaponParts>>,
     player_without_attack: Option<
         Single<(&Transform, &Player), (Without<Weapon>, Without<Attack>)>,
     >,
-    player_with_attack: Option<Single<(&Transform, &Player, &Attack), Without<Weapon>>>,
-
     time: Res<Time>,
 ) {
+    let (transform, player) = match player_without_attack {
+        Some(p) => *p,
+        None => {
+            // Player not found, must be attackin
+            return;
+        }
+    };
+
     let delta_time = time.delta_secs();
 
-    if let Some(p) = player_without_attack {
-        let (transform, player) = *p;
-        following_parts.iter_mut().for_each(|mut sprite| {
-            sprite.color = color_with_transparency(INACTIVE_WEAPON_TRANSPARENCY);
-        });
-        // following_sprite.color = color_with_transparency(INACTIVE_WEAPON_TRANSPARENCY);
-        following.scale = {
-            let Vec3 { x, y, z } = following.scale;
-            let direction = if following.translation.x > transform.translation.x {
-                1.0
-            } else {
-                -1.0
-            };
-            Vec3::new(direction * x.abs(), y, z)
+    following_parts.iter_mut().for_each(|mut sprite| {
+        sprite.color = color_with_transparency(INACTIVE_WEAPON_TRANSPARENCY);
+    });
+    following.scale = {
+        let Vec3 { x, y, z } = following.scale;
+        let direction = if following.translation.x > transform.translation.x {
+            1.0
+        } else {
+            -1.0
         };
-        following.rotation = Quat::default();
-        let target_translation = &transform.translation
-            + WEAPON_FOLLOW_OFFSET * (Vec3::new(-player.face_direction.x, 1., 1.));
-        following
-            .translation
-            .smooth_nudge(&target_translation, 2.0, delta_time);
-    }
+        Vec3::new(direction * x.abs(), y, z)
+    };
+    following.rotation = Quat::default();
+    let target_translation = &transform.translation
+        + WEAPON_FOLLOW_OFFSET * (Vec3::new(-player.face_direction.x, 1., 1.));
+    following
+        .translation
+        .smooth_nudge(&target_translation, 2.0, delta_time);
+}
 
-    if let Some(p) = player_with_attack {
-        let (transform, player, attack) = *p;
-        let target_translation = &transform.translation
-            + WEAPON_ATTACK_HORIZONTAL_OFFSET
-                * (player.attack_direction * Vec2::new(1.0, 1.0)).extend(1.0);
-        following_parts.iter_mut().for_each(|mut sprite| {
-            sprite.color = color_with_transparency(1.0);
-        });
-        following.rotation = Quat::from_rotation_z(Vec2::Y.angle_to(player.attack_direction));
-        following
-            .translation
-            .smooth_nudge(&target_translation, 5.0, delta_time);
+fn move_weapon_while_attack(
+    mut following: Single<&mut Transform, With<Weapon>>,
+    mut following_parts: Query<&mut Sprite, With<WeaponParts>>,
+    player_with_attack: Option<Single<(&Transform, &Player, &Attack), Without<Weapon>>>,
+    mut do_attack_event: EventWriter<DoAttackEvent>,
+    time: Res<Time>,
+) {
+    let (transform, player, attack) = match player_with_attack {
+        Some(p) => *p,
+        None => {
+            // Player not found, must be attackin
+            return;
+        }
+    };
+    let delta_time = time.delta_secs();
+
+    match &attack.phase {
+        AttackPhase::Reacting(timer) => {
+            let transparency = color_with_transparency(timer_to_transparency(timer));
+            following_parts.iter_mut().for_each(|mut sprite| {
+                sprite.color = transparency;
+            });
+            following.rotation = Quat::from_rotation_z(Vec2::Y.angle_to(player.attack_direction));
+            following.scale =
+                attack.position.get_scale(player.attack_direction) * Vec2::splat(0.05).extend(1.0);
+            following.translation.smooth_nudge(
+                &(transform.translation + attack.position.get_translate(player.attack_direction)),
+                10.0,
+                delta_time,
+            );
+        }
+        AttackPhase::Attacking { pos, direction } => {
+            let target_position = attack.position.get_next().get_translate(*direction);
+
+            if (following.translation - (pos + target_position)).length() < 1.0 {
+                do_attack_event.write(DoAttackEvent);
+            }
+            let decay_rate = exp(2.7 * (-attack.attack_delay + 2.7));
+
+            following
+                .translation
+                .smooth_nudge(&(pos + target_position), decay_rate, delta_time);
+        }
+        AttackPhase::Ready(timer) => {
+            let transparency = color_with_transparency(timer_to_transparency(timer));
+            following_parts.iter_mut().for_each(|mut sprite| {
+                sprite.color = transparency;
+            });
+            following.rotation = Quat::from_rotation_z(Vec2::Y.angle_to(player.attack_direction));
+            following.scale =
+                attack.position.get_scale(player.attack_direction) * Vec2::splat(0.05).extend(1.0);
+            following.translation.smooth_nudge(
+                &(transform.translation + attack.position.get_translate(player.attack_direction)),
+                10.0,
+                delta_time,
+            );
+        }
+        AttackPhase::Cooling(timer) => {}
     }
+}
+
+fn color_with_transparency(alpha: f32) -> Color {
+    Color::srgba(1.0, 1.0, 1.0, alpha)
+}
+
+fn timer_to_transparency(timer: &Timer) -> f32 {
+    let grow_percentage = if timer.finished() {
+        1.0
+    } else {
+        timer.elapsed_secs() / timer.duration().as_secs() as f32
+    };
+
+    // we can tweak this with a function or smth
+    grow_percentage
 }

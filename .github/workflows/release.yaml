@@ -29,13 +29,14 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
       - name: install wasm-bindgen-cli
         run: |
           cargo install wasm-bindgen-cli
 
       - name: Build
         run: |
-          cargo build --release --target wasm32-unknown-unknown
+          cargo build --release --target wasm32-unknown-unknown --no-default-features
 
       - name: Prepare package
         run: |
@@ -77,13 +78,14 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: x86_64-unknown-linux-gnu
+      - uses: Swatinem/rust-cache@v2
       - name: install dependencies
         run: |
-          sudo apt-get update; sudo apt-get install pkg-config libx11-dev libasound2-dev libudev-dev libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev
+          sudo apt-get update; sudo apt-get install pkg-config libx11-dev libasound2-dev libudev-dev libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev libwayland-dev
 
       - name: Build
         run: |
-          cargo build --release --target x86_64-unknown-linux-gnu
+          cargo build --release --target x86_64-unknown-linux-gnu --no-default-features
 
       - name: Prepare package
         run: |
@@ -126,10 +128,11 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: x86_64-pc-windows-msvc
+      - uses: Swatinem/rust-cache@v2
 
       - name: Build
         run: |
-          cargo build --release --target x86_64-pc-windows-msvc
+          cargo build --release --target x86_64-pc-windows-msvc --no-default-features
 
       - name: Prepare package
         run: |
@@ -172,6 +175,8 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: x86_64-apple-darwin
+      - uses: Swatinem/rust-cache@v2
+
       - name: Environment Setup
         run: |
           export CFLAGS="-fno-stack-check"
@@ -179,7 +184,7 @@ jobs:
 
       - name: Build
         run: |
-          cargo build --release --target x86_64-apple-darwin
+          cargo build --release --target x86_64-apple-darwin --no-default-features
 
       - name: Prepare Package
         run: |
@@ -218,6 +223,8 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: aarch64-apple-darwin
+      - uses: Swatinem/rust-cache@v2
+
       - name: Environment
         # macOS 11 was the first version to support ARM
         run: |
@@ -225,7 +232,7 @@ jobs:
 
       - name: Build
         run: |
-          cargo build --release --target aarch64-apple-darwin
+          cargo build --release --target aarch64-apple-darwin --no-default-features
 
       - name: Prepare Package
         run: |

@@ -1,10 +1,10 @@
 use avian2d::{math::Vector, prelude::*};
-use bevy::{prelude::*, sprite::Anchor};
+use bevy::prelude::*;
 
 use crate::{
     asset_tracking::LoadResource,
-    collision_layers::{player_hit_boxes, player_hurt_boxes},
-    health::{Health, hitbox_prefab, hurtbox_prefab},
+    collision_layers::player_hurt_boxes,
+    health::{Health, hurtbox_prefab},
     physics::creature::Grounded,
 };
 
@@ -66,14 +66,10 @@ fn player_fall_recovery(
     }
 }
 
-pub fn player(
-    player_assets: &PlayerAssets,
-    meshes: &mut Assets<Mesh>,
-    materials: &mut Assets<ColorMaterial>,
-) -> impl Bundle {
+pub fn player(player_assets: &PlayerAssets) -> impl Bundle {
     (
         Name::new("Player"),
-        Transform::from_xyz(0.0, 0.0, 1.0),
+        Transform::from_xyz(0.0, 0.0, 2.0),
         Player {
             face_direction: Vec2::X,
             attack_direction: Vec2::X,
