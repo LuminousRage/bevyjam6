@@ -176,7 +176,7 @@ fn update_eye_animation(
             match name.as_str() {
                 "Pupil" => {
                     let dir =
-                        -global_transform.translation().truncate() + player.translation.truncate();
+                        player.translation.truncate() - global_transform.translation().truncate();
                     let target = (&dir.normalize_or_zero() * 50.0).extend(1.0);
                     transform
                         .translation
