@@ -1,9 +1,15 @@
 use avian2d::math::Scalar;
+use bevy::math::Vec2;
 
 pub const JUMP_IMPULSE: f32 = 650.0;
 pub const MOVEMENT_DAMPING: f32 = 0.0;
 pub const MAX_SLOPE_ANGLE: f32 = (30.0 as Scalar).to_radians();
 pub const BOSS_HEALTH: f32 = 500.0;
+pub const BOSS_TIME_BETWEEN_ATTACKS: f32 = 5.0;
+pub const TIME_TO_REPOSITION: f32 = 3.5;
+pub const POSITION_1: Vec2 = Vec2::new(-200., 100.);
+pub const POSITION_2_X: f32 = -POSITION_1.x;
+pub const MAX_REPOSITIONING_Y: f32 = 400.0;
 //slime stuff
 pub const RED_HEALTH: f32 = 25.0;
 pub const RED_JUMP_ATTACK_COOLDOWN: f32 = 2.0;

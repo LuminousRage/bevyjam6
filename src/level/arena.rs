@@ -4,6 +4,7 @@ use bevy::prelude::*;
 use crate::{
     collision_layers::GameLayer,
     enemy::{
+        boss::boss,
         eye::{EyeAssets, the_eye},
         slime::{SlimeAssets, slime},
     },
@@ -21,7 +22,6 @@ pub fn spawn_level(
     player_layout_assets: Res<PlayerLayoutAssets>,
     weapon_assets: Res<WeaponAssets>,
     slime_assets: Res<SlimeAssets>,
-    boss_assets: Res<BossAssets>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
@@ -43,8 +43,11 @@ pub fn spawn_level(
 
     commands.spawn(red_slime());
     commands.spawn(black_slime());
-    commands.spawn(the_eye(&eye_assets, &mut texture_atlas_layouts));
-    commands.spawn(slime());
+    commands.spawn(boss(
+        &eye_assets,
+        &mut texture_atlas_layouts,
+        Vec3::new(-200.0, 100.0, 0.0),
+    ));
     // commands.spawn(slime());
 
     commands.spawn((

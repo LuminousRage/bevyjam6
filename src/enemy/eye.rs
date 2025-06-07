@@ -1,9 +1,14 @@
 use std::time::Duration;
 
+use avian2d::prelude::Collider;
 use bevy::prelude::*;
 
 use crate::{
-    animation::reversible_animation, asset_tracking::LoadResource, player::character::Player,
+    animation::reversible_animation,
+    asset_tracking::LoadResource,
+    collision_layers::{enemy_hit_boxes, enemy_hurt_boxes},
+    health::{hitbox_prefab, hurtbox_prefab},
+    player::character::Player,
 };
 
 pub(super) fn plugin(app: &mut App) {
@@ -53,18 +58,31 @@ impl FromWorld for EyeAssets {
 pub fn the_eye(
     eye_assets: &EyeAssets,
     texture_atlas_layouts: &mut Assets<TextureAtlasLayout>,
+    scale: Vec2,
+    translation: Vec3,
 ) -> impl Bundle {
     // A texture atlas is a way to split a single image into a grid of related images.
     // You can learn more in this example: https://github.com/bevyengine/bevy/blob/latest/examples/2d/texture_atlas.rs
     let layout = TextureAtlasLayout::from_grid(UVec2::new(1500, 1006), 5, 6, None, None);
     let texture_atlas_layout = texture_atlas_layouts.add(layout);
-    // let player_animation = PlayerAnimation::new();
 
     (
-        Name::new("The Eye"),
-        Transform::from_scale(Vec2::splat(0.5).extend(1.0)),
         Visibility::default(),
+        Transform::from_scale(scale.extend(1.0)).with_translation(translation),
         children![
+            hurtbox_prefab(
+                Collider::circle(100.),
+                enemy_hurt_boxes(),
+                0.0,
+                Transform::default()
+            ),
+            hitbox_prefab(
+                Collider::circle(100.),
+                enemy_hit_boxes(),
+                0.0,
+                10.0,
+                Transform::default()
+            ),
             (
                 Name::new("Wings"),
                 Sprite {
