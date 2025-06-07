@@ -20,7 +20,6 @@ pub(super) fn plugin(app: &mut App) {
     app.load_resource::<PlayerAssets>();
     app.add_systems(Update, player_fall_recovery);
     app.add_systems(Update, reset_player_gravity_scale);
-    app.add_systems(Update, update_player_transform);
     app.add_systems(Startup, init_player_layout);
 }
 
@@ -117,7 +116,12 @@ pub fn player(
             face_direction: Vec2::X,
             attack_direction: Vec2::X,
         },
-        player_sprite(PlayerSpriteMode::Idle, player_assets, player_layout_assets),
+        PlayerSpriteMode::Idle(false),
+        player_sprite(
+            PlayerSpriteMode::Idle(false),
+            player_assets,
+            player_layout_assets,
+        ),
         CharacterControllerBundle::new(Collider::capsule(15.0, 135.0), Vector::ONE),
         Health::new(CHARACTER_HEALTH),
         Friction::ZERO.with_combine_rule(CoefficientCombine::Min),
@@ -133,20 +137,21 @@ pub fn player(
     )
 }
 
+#[derive(Component, Debug)]
 pub enum PlayerSpriteMode {
-    Idle,
+    Idle(bool),
     Run,
     Dash,
     Jump,
 }
 
-fn player_sprite(
+pub fn player_sprite(
     mode: PlayerSpriteMode,
     player_assets: &PlayerAssets,
     player_layout: &PlayerLayoutAssets,
 ) -> Sprite {
     let (image, texture_atlas) = match mode {
-        PlayerSpriteMode::Idle => (
+        PlayerSpriteMode::Idle(_) => (
             player_assets.player_idle.clone(),
             Some(TextureAtlas {
                 layout: player_layout.player_idle.clone(),
@@ -178,10 +183,4 @@ fn player_sprite(
         texture_atlas,
         ..default()
     }
-}
-
-fn update_player_transform(mut player: Single<(&Player, &mut Transform)>) {
-    let (p, transform) = &mut *player;
-
-    transform.scale.x = p.face_direction.x * transform.scale.x.abs();
 }

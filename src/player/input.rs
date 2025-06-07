@@ -85,8 +85,12 @@ pub fn gamepad_movement_input(
             movement_event_writer.write(MovementAction::JumpStart);
         }
 
-        if gamepad.any_just_pressed([GamepadButton::RightTrigger, GamepadButton::RightTrigger2]) {
+        if gamepad.just_released(GamepadButton::South) {
             movement_event_writer.write(MovementAction::JumpEnd);
+        }
+
+        if gamepad.any_just_pressed([GamepadButton::RightTrigger, GamepadButton::RightTrigger2]) {
+            movement_event_writer.write(MovementAction::Dash);
         }
     }
 }

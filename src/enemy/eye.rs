@@ -1,8 +1,10 @@
-use std::{f32::consts::FRAC_PI_2, time::Duration};
+use std::time::Duration;
 
 use bevy::prelude::*;
 
-use crate::{asset_tracking::LoadResource, player::character::Player};
+use crate::{
+    animation::reversible_animation, asset_tracking::LoadResource, player::character::Player,
+};
 
 pub(super) fn plugin(app: &mut App) {
     app.register_type::<EyeAssets>();
@@ -123,21 +125,7 @@ impl EyeAnimation {
     fn update_frame(&mut self, time: Duration) {
         self.timer.tick(time);
         if self.timer.just_finished() {
-            if self.reverse {
-                self.frame -= 1;
-
-                if self.frame == 0 {
-                    self.reverse = false;
-                }
-            }
-
-            if !self.reverse {
-                self.frame += 1;
-
-                if self.frame == Self::NUM_FRAMES - 1 {
-                    self.reverse = true;
-                }
-            }
+            reversible_animation(&mut self.reverse, &mut self.frame, Self::NUM_FRAMES);
         }
     }
 }
