@@ -51,8 +51,6 @@ fn update_player_sprite_animation(
         PlayerSpriteMode::Jump => {}
         PlayerSpriteMode::Dash => {}
     }
-
-    dbg!(texture_atlas.index);
 }
 
 fn movement_visual(
