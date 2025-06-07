@@ -1,5 +1,5 @@
 use avian2d::prelude::Collider;
-use bevy::{prelude::*, sprite::Anchor};
+use bevy::{math::ops::exp, prelude::*, sprite::Anchor};
 
 use crate::{
     asset_tracking::LoadResource,
@@ -213,10 +213,11 @@ fn move_weapon_while_attack(
             if (following.translation - (pos + target_position)).length() < 1.0 {
                 do_attack_event.write(DoAttackEvent);
             }
+            let decay_rate = exp(2.7 * (-attack.attack_delay + 2.7));
 
             following
                 .translation
-                .smooth_nudge(&(pos + target_position), 10.0, delta_time);
+                .smooth_nudge(&(pos + target_position), decay_rate, delta_time);
         }
         AttackPhase::Ready(timer) => {
             let transparency = color_with_transparency(timer_to_transparency(timer));

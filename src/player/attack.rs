@@ -28,7 +28,7 @@ pub(super) fn plugin(app: &mut App) {
 }
 
 const INITIAL_ATTACK_COOLDOWN_SECONDS: f32 = 2.;
-const MINIMUM_ATTACK_COOLDOWN_SECONDS: f32 = 1.;
+const MINIMUM_ATTACK_COOLDOWN_SECONDS: f32 = 0.05;
 const ATTACK_PERIOD_SECONDS: f32 = 2.;
 const GRACE_PERIOD_SECONDS: f32 = 2.0;
 const INITIAL_EXTEND_SCALE: f32 = 8.0;
@@ -156,6 +156,13 @@ impl AttackPhase {
             }
         };
     }
+    pub fn new_ready_timer() -> AttackPhase {
+        AttackPhase::Ready(Timer::from_seconds(ATTACK_PERIOD_SECONDS, TimerMode::Once))
+    }
+
+    pub fn new_cooling_timer() -> AttackPhase {
+        AttackPhase::Cooling(Timer::from_seconds(GRACE_PERIOD_SECONDS, TimerMode::Once))
+    }
 }
 
 impl Default for Attack {
@@ -191,10 +198,6 @@ impl Attack {
 
     pub fn new_reaction_timer(&self) -> AttackPhase {
         AttackPhase::Reacting(Timer::from_seconds(self.attack_delay, TimerMode::Once))
-    }
-
-    pub fn new_ready_timer() -> AttackPhase {
-        AttackPhase::Ready(Timer::from_seconds(ATTACK_PERIOD_SECONDS, TimerMode::Once))
     }
 }
 
@@ -235,13 +238,9 @@ fn attack_handler(
             if timer.just_finished() {
                 attack.update_fury(false);
                 // if we are in ready phase, we can start cooling down
-                attack.phase = AttackPhase::Cooling(Timer::from_seconds(
-                    GRACE_PERIOD_SECONDS,
-                    TimerMode::Once,
-                ));
+                attack.phase = AttackPhase::new_cooling_timer();
             } else if has_attack_input {
                 // this should go when you move to the ready phase
-                attack.update_fury(true);
                 attack.phase = attack.new_reaction_timer();
             }
         }
@@ -263,8 +262,17 @@ fn do_attack(
 
     if let AttackPhase::Attacking { pos, direction } = attack.phase {
         for _ in do_attack_event.read() {
-            attack.phase =
-                AttackPhase::Ready(Timer::from_seconds(ATTACK_PERIOD_SECONDS, TimerMode::Once));
+            let collision = true;
+
+            attack.position = attack.position.get_next();
+            // check collision
+            if collision {
+                attack.update_fury(true);
+                attack.phase = AttackPhase::new_ready_timer();
+            } else {
+                attack.update_fury(false);
+                attack.phase = AttackPhase::new_cooling_timer()
+            }
         }
     }
 }
