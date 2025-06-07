@@ -17,6 +17,7 @@ pub(super) fn plugin(app: &mut App) {
 
 #[derive(Event)]
 pub struct JumpingEvent {
+    /// false cancels the jump
     pub is_start: bool,
 }
 
@@ -41,6 +42,10 @@ pub fn handle_jump_event(
     for event in jump_event_reader.read() {
         match event.is_start {
             true => {
+                if let PlayerMovementState::Dash(_) = *movement_state {
+                    continue;
+                }
+
                 if is_grounded || is_coyote {
                     commands.entity(entity).remove::<Grounded>();
                     commands.entity(entity).remove::<Coyote>();
@@ -74,8 +79,9 @@ fn handle_jump_timer(
         if timer.just_finished() {
             jump_event_writer.write(JumpingEvent { is_start: false });
         }
-    }
-    if is_grounded {
-        *state = PlayerMovementState::Idle;
+
+        if is_grounded {
+            *state = PlayerMovementState::Idle;
+        }
     }
 }

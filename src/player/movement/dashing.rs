@@ -6,56 +6,125 @@ use bevy::prelude::*;
 
 use crate::{
     physics::creature::{Flying, Grounded},
-    player::configs::CHARACTER_GRAVITY_SCALE,
+    player::{
+        character::Player,
+        configs::{
+            CHARACTER_GRAVITY_SCALE, DASH_COOLDOWN_DURATION, DASH_DURATION, DASH_SPEED_MODIFIER,
+            JUMP_DURATION_SECONDS, MOVEMENT_SPEED,
+        },
+        movement::movement::PlayerMovementState,
+    },
 };
 
 pub(super) fn plugin(app: &mut App) {
-    app.add_systems(Update, handle_dashing);
+    app.add_event::<DashingEvent>();
+    app.add_systems(Update, (handle_dashing, handle_dashing_cooldown));
+}
+
+#[derive(Event)]
+pub struct DashingEvent {
+    /// false cancels the dash
+    pub is_start: bool,
 }
 
 #[derive(Component)]
 #[component(storage = "SparseSet")]
-pub struct Dashing {
-    pub current_duration: f32,
-    pub current_cooldown: f32,
-    pub used: bool,
-}
+pub struct DashingUsed;
 
-impl Dashing {
-    pub fn new() -> Dashing {
-        Self {
-            current_duration: 0.0,
-            current_cooldown: 0.0,
-            used: false,
+#[derive(Component)]
+#[component(storage = "SparseSet")]
+pub struct DashingCooldown(Timer);
+
+pub fn handle_dash_event(
+    player: Single<(
+        Entity,
+        &Player,
+        &mut LinearVelocity,
+        &mut GravityScale,
+        &mut PlayerMovementState,
+        Has<DashingUsed>,
+        Has<DashingCooldown>,
+    )>,
+    mut dash_event_reader: EventReader<DashingEvent>,
+    mut commands: Commands,
+) {
+    let (
+        entity,
+        player,
+        mut linear_velocity,
+        mut gravity,
+        mut movement_state,
+        used_dashing,
+        dashing_cooldown,
+    ) = player.into_inner();
+
+    for event in dash_event_reader.read() {
+        match event.is_start {
+            true => {
+                if let PlayerMovementState::Dash(_) = *movement_state {
+                    continue;
+                }
+                if used_dashing || dashing_cooldown {
+                    // Can't use dash, do nothing
+                    continue;
+                }
+                commands.entity(entity).insert(Flying);
+                linear_velocity.x = player.face_direction.x * MOVEMENT_SPEED * DASH_SPEED_MODIFIER;
+                linear_velocity.y = 0.0;
+                gravity.0 = 0.0;
+                commands.entity(entity).insert(DashingUsed);
+                *movement_state = PlayerMovementState::Dash(DASH_DURATION);
+            }
+            false => {
+                commands.entity(entity).remove::<Flying>();
+                gravity.0 = CHARACTER_GRAVITY_SCALE;
+                linear_velocity.x *= 0.4;
+                *movement_state = PlayerMovementState::Jump(Timer::from_seconds(
+                    JUMP_DURATION_SECONDS,
+                    TimerMode::Once,
+                ));
+                commands
+                    .entity(entity)
+                    .insert(DashingCooldown(Timer::from_seconds(
+                        DASH_COOLDOWN_DURATION,
+                        TimerMode::Once,
+                    )));
+            }
         }
     }
 }
 
-// maybe use an event for this, so collisions/damage can cancel dash
+fn handle_dashing_cooldown(
+    mut commands: Commands,
+    player: Option<Single<(Entity, &mut DashingCooldown), With<Player>>>,
+    time: Res<Time>,
+) {
+    if let Some(p) = player {
+        let (entity, mut cooldown) = p.into_inner();
+        cooldown.0.tick(time.delta());
+        if cooldown.0.finished() {
+            commands.entity(entity).remove::<DashingCooldown>();
+        }
+    }
+}
+
 fn handle_dashing(
     time: Res<Time>,
     mut commands: Commands,
-    mut query: Query<(
-        Entity,
-        &mut Dashing,
-        &mut GravityScale,
-        &mut LinearVelocity,
-        Has<Grounded>,
-    )>,
+    mut dash_event_writer: EventWriter<DashingEvent>,
+    player: Single<(Entity, &mut PlayerMovementState, Has<Grounded>), With<Player>>,
 ) {
-    for (entity, mut dashing, mut gravity_scale, mut linear_velocity, is_grounded) in &mut query {
+    let (entity, mut state, is_grounded) = player.into_inner();
+
+    if let PlayerMovementState::Dash(duration) = &mut *state {
         let delta = time.delta().as_secs_f32().adjust_precision();
-        dashing.current_cooldown -= delta;
-        dashing.current_duration -= delta;
-
-        if dashing.current_duration <= 0.0 && dashing.current_duration + delta > 0.0 {
-            commands.entity(entity).remove::<Flying>();
-            gravity_scale.0 = CHARACTER_GRAVITY_SCALE;
-            linear_velocity.x *= 0.4;
+        *duration -= delta;
+        if *duration <= 0.0 && *duration + delta > 0.0 {
+            dash_event_writer.write(DashingEvent { is_start: false });
         }
+    }
 
-        if is_grounded {
-            dashing.used = false;
-        }
+    if is_grounded {
+        commands.entity(entity).remove::<DashingUsed>();
     }
 }

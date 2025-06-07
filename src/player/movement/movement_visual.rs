@@ -6,7 +6,7 @@ use crate::{
     physics::creature::Grounded,
     player::{
         character::{Player, PlayerAssets, PlayerLayoutAssets, PlayerSpriteMode},
-        movement::{dashing::Dashing, movement::MovementAction},
+        movement::movement::MovementAction,
     },
 };
 const IDLE_FRAME_NUM: usize = 10;
@@ -63,10 +63,9 @@ fn movement_visual(
         &mut Sprite,
         &mut LinearVelocity,
         Has<Grounded>,
-        Has<Dashing>,
     )>,
     player_assets: Res<PlayerAssets>,
     player_layout: Res<PlayerLayoutAssets>,
 ) {
-    let (entity, player, sprite, lv, is_grounded, is_dashing) = &mut *controllers;
+    let (entity, player, sprite, lv, is_grounded) = &mut *controllers;
 }
