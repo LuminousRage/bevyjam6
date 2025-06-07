@@ -11,6 +11,7 @@ use super::{
 
 pub(super) fn plugin(app: &mut App) {
     app.add_event::<InputAttackEvent>();
+    app.add_event::<DoAttackEvent>();
     app.add_event::<AttackDirection>();
     app.add_systems(
         Update,
@@ -43,6 +44,9 @@ const WEAPON_ATTACK_VERTICAL_OFFSET: Vec3 = Vec3::new(30.0, 10.0, -1.0);
 
 #[derive(Event)]
 pub struct InputAttackEvent;
+
+#[derive(Event)]
+pub struct DoAttackEvent;
 
 #[derive(Event)]
 pub struct AttackDirection(pub Vec2);
@@ -117,8 +121,8 @@ impl AttackPosition {
 pub enum AttackPhase {
     /// Weapon is chain reacting, timer is how long from button press to attack
     Reacting(Timer),
-    /// Attack animation time
-    Attacking,
+    /// Attack animation time, vec holds translation of the character at attack time
+    Attacking { pos: Vec3, direction: Vec2 },
     /// Weapon is ready to attack, timer is how long until weapon starting cooling down
     Ready(Timer),
     /// Weapon is cooling down, attacking during this period will increase the cooldown
@@ -140,7 +144,10 @@ impl AttackPhase {
             AttackPhase::Reacting(timer) => {
                 timer.tick(time);
             }
-            AttackPhase::Attacking => {}
+            AttackPhase::Attacking {
+                pos: _,
+                direction: _,
+            } => {}
             AttackPhase::Ready(timer) => {
                 timer.tick(time);
             }
@@ -192,7 +199,7 @@ impl Attack {
 }
 
 fn attack_handler(
-    mut player: Single<(Option<&mut Attack>, Entity), With<Player>>,
+    mut player: Single<(Option<&mut Attack>, Entity, &Transform, &Player)>,
     mut input_event: EventReader<InputAttackEvent>,
     mut commands: Commands,
     time: Res<Time>,
@@ -200,7 +207,7 @@ fn attack_handler(
     // Loop so we consume events and don't block. but also we don't really care how many events get triggered
     let has_attack_input = input_event.read().fold(false, |acc, _| acc || true);
 
-    let (attack_component, entity) = &mut *player;
+    let (attack_component, entity, transform, player) = &mut *player;
     let attack = match attack_component {
         Some(a) => a,
         None => {
@@ -216,11 +223,14 @@ fn attack_handler(
     match &mut attack.phase {
         AttackPhase::Reacting(timer) => {
             if timer.just_finished() {
-                attack.phase = AttackPhase::Attacking;
+                attack.phase = AttackPhase::Attacking {
+                    pos: transform.translation,
+                    direction: player.attack_direction,
+                };
             }
         }
         // Attacking is handled by animation
-        AttackPhase::Attacking => {}
+        AttackPhase::Attacking { pos, direction } => {}
         AttackPhase::Ready(timer) => {
             if timer.just_finished() {
                 attack.update_fury(false);
@@ -245,10 +255,18 @@ fn attack_handler(
     }
 }
 
-fn do_attack(mut player: Single<(&mut Attack, Entity), With<Player>>) {
+fn do_attack(
+    mut player: Single<(&mut Attack, Entity), With<Player>>,
+    mut do_attack_event: EventReader<DoAttackEvent>,
+) {
     let (attack, entity) = &mut *player;
 
-    if let AttackPhase::Attacking = attack.phase {}
+    if let AttackPhase::Attacking { pos, direction } = attack.phase {
+        for _ in do_attack_event.read() {
+            attack.phase =
+                AttackPhase::Ready(Timer::from_seconds(ATTACK_PERIOD_SECONDS, TimerMode::Once));
+        }
+    }
 }
 
 fn player_attack_direction(

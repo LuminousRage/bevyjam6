@@ -5,7 +5,7 @@ use crate::{
     asset_tracking::LoadResource,
     collision_layers::player_hit_boxes,
     health::hitbox_prefab,
-    player::attack::{Attack, AttackPhase},
+    player::attack::{Attack, AttackPhase, DoAttackEvent},
 };
 
 use super::character::Player;
@@ -180,6 +180,7 @@ fn move_weapon_while_attack(
     mut following: Single<&mut Transform, With<Weapon>>,
     mut following_parts: Query<&mut Sprite, With<WeaponParts>>,
     player_with_attack: Option<Single<(&Transform, &Player, &Attack), Without<Weapon>>>,
+    mut do_attack_event: EventWriter<DoAttackEvent>,
     time: Res<Time>,
 ) {
     let (transform, player, attack) = match player_with_attack {
@@ -206,19 +207,31 @@ fn move_weapon_while_attack(
                 delta_time,
             );
         }
-        AttackPhase::Attacking => {
-            let target_position = attack
-                .position
-                .get_next()
-                .get_translate(player.attack_direction);
+        AttackPhase::Attacking { pos, direction } => {
+            let target_position = attack.position.get_next().get_translate(*direction);
 
+            if (following.translation - (pos + target_position)).length() < 1.0 {
+                do_attack_event.write(DoAttackEvent);
+            }
+
+            following
+                .translation
+                .smooth_nudge(&(pos + target_position), 10.0, delta_time);
+        }
+        AttackPhase::Ready(timer) => {
+            let transparency = color_with_transparency(timer_to_transparency(timer));
+            following_parts.iter_mut().for_each(|mut sprite| {
+                sprite.color = transparency;
+            });
+            following.rotation = Quat::from_rotation_z(Vec2::Y.angle_to(player.attack_direction));
+            following.scale =
+                attack.position.get_scale(player.attack_direction) * Vec2::splat(0.05).extend(1.0);
             following.translation.smooth_nudge(
-                &(transform.translation + target_position),
+                &(transform.translation + attack.position.get_translate(player.attack_direction)),
                 10.0,
                 delta_time,
             );
         }
-        AttackPhase::Ready(timer) => {}
         AttackPhase::Cooling(timer) => {}
     }
 }
