@@ -69,7 +69,7 @@ fn player_fall_recovery(
 pub fn player(player_assets: &PlayerAssets) -> impl Bundle {
     (
         Name::new("Player"),
-        Transform::from_xyz(0.0, 0.0, 1.0),
+        Transform::from_xyz(0.0, 0.0, 2.0),
         Player {
             face_direction: Vec2::X,
             attack_direction: Vec2::X,
