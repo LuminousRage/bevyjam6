@@ -3,6 +3,7 @@
 // Disable console on Windows for non-dev builds.
 #![cfg_attr(not(feature = "dev"), windows_subsystem = "windows")]
 
+mod animation;
 mod asset_tracking;
 mod audio;
 mod camera;
@@ -71,6 +72,7 @@ impl Plugin for AppPlugin {
             player::plugin,
             enemy::plugin,
             camera::plugin,
+            animation::plugin,
         ));
 
         // pysicks

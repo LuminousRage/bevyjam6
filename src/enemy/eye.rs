@@ -2,7 +2,9 @@ use std::time::Duration;
 
 use bevy::prelude::*;
 
-use crate::asset_tracking::LoadResource;
+use crate::{
+    animation::reversible_animation, asset_tracking::LoadResource, player::character::Player,
+};
 
 pub(super) fn plugin(app: &mut App) {
     app.register_type::<EyeAssets>();
@@ -11,7 +13,7 @@ pub(super) fn plugin(app: &mut App) {
         Update,
         (
             animation_updater,
-            update_animation_atlas.run_if(resource_exists::<EyeAssets>),
+            update_eye_animation.run_if(resource_exists::<EyeAssets>),
         )
             .chain(),
     );
@@ -22,13 +24,28 @@ pub(super) fn plugin(app: &mut App) {
 pub struct EyeAssets {
     #[dependency]
     eye: Handle<Image>,
+    #[dependency]
+    ring: Handle<Image>,
+    #[dependency]
+    wings: Handle<Image>,
+    #[dependency]
+    red: Handle<Image>,
+    #[dependency]
+    white: Handle<Image>,
+    #[dependency]
+    pupil: Handle<Image>,
 }
 
 impl FromWorld for EyeAssets {
     fn from_world(world: &mut World) -> Self {
         let assets = world.resource::<AssetServer>();
         Self {
-            eye: assets.load("images/boss_eye.png"),
+            eye: assets.load("images/eye/boss_eye_main.png"),
+            ring: assets.load("images/eye/boss_eye_ring.png"),
+            wings: assets.load("images/eye/boss_eye_wings.png"),
+            white: assets.load("images/eye/boss_eye_white.png"),
+            red: assets.load("images/eye/boss_eye_red.png"),
+            pupil: assets.load("images/eye/boss_eye_pupil.png"),
         }
     }
 }
@@ -39,45 +56,76 @@ pub fn the_eye(
 ) -> impl Bundle {
     // A texture atlas is a way to split a single image into a grid of related images.
     // You can learn more in this example: https://github.com/bevyengine/bevy/blob/latest/examples/2d/texture_atlas.rs
-    let layout = TextureAtlasLayout::from_grid(UVec2::new(1500, 1006), 10, 12, None, None);
+    let layout = TextureAtlasLayout::from_grid(UVec2::new(1500, 1006), 5, 6, None, None);
     let texture_atlas_layout = texture_atlas_layouts.add(layout);
     // let player_animation = PlayerAnimation::new();
 
     (
-        Name::new("The EYe"),
-        Sprite {
-            image: eye_assets.eye.clone(),
-
-            texture_atlas: Some(TextureAtlas {
-                layout: texture_atlas_layout,
-                index: 0, // index: player_animation.get_atlas_index(),
-            }),
-            ..default()
-        },
+        Name::new("The Eye"),
         Transform::from_scale(Vec2::splat(0.5).extend(1.0)),
-        EyeAnimation::new(),
+        Visibility::default(),
+        children![
+            (
+                Name::new("Wings"),
+                Sprite {
+                    image: eye_assets.wings.clone(),
+
+                    texture_atlas: Some(TextureAtlas {
+                        layout: texture_atlas_layout,
+                        index: 0,
+                    }),
+                    ..default()
+                },
+                EyeAnimation::new()
+            ),
+            (
+                Name::new("Ring"),
+                Sprite::from_image(eye_assets.ring.clone()),
+                EyeAnimation::new()
+            ),
+            (
+                Name::new("Eye White"),
+                Sprite::from_image(eye_assets.white.clone())
+            ),
+            (
+                Name::new("Pupil"),
+                Sprite::from_image(eye_assets.pupil.clone()),
+                EyeAnimation::new()
+            ),
+            (Name::new("Eye"), Sprite::from_image(eye_assets.eye.clone())),
+        ],
     )
 }
+
+// The whole code below can do some refactoring
 
 #[derive(Component)]
 pub struct EyeAnimation {
     timer: Timer,
     frame: usize,
+    reverse: bool,
+    pub target: Quat,
 }
 
 impl EyeAnimation {
-    const NUM_FRAMES: usize = 120;
+    const NUM_FRAMES: usize = 30;
     pub fn new() -> Self {
         Self {
             timer: Timer::from_seconds(0.05, TimerMode::Repeating),
             frame: 0,
+            reverse: false,
+            target: Quat::from_rotation_z(std::f32::consts::FRAC_PI_2 / 3.0),
         }
+    }
+
+    fn update_target(&mut self) {
+        self.target = self.target.inverse();
     }
 
     fn update_frame(&mut self, time: Duration) {
         self.timer.tick(time);
         if self.timer.just_finished() {
-            self.frame = (self.frame + 1) % Self::NUM_FRAMES;
+            reversible_animation(&mut self.reverse, &mut self.frame, Self::NUM_FRAMES);
         }
     }
 }
@@ -88,11 +136,34 @@ fn animation_updater(mut query: Query<&mut EyeAnimation>, time: Res<Time>) {
     }
 }
 
-fn update_animation_atlas(mut query: Query<(&mut Sprite, &EyeAnimation)>) {
-    for (mut sprite, animation) in &mut query {
-        let Some(atlas) = sprite.texture_atlas.as_mut() else {
-            continue;
+fn update_eye_animation(
+    mut query: Query<(&mut Sprite, &mut Transform, &mut EyeAnimation, &Name), Without<Player>>,
+    player: Single<&Transform, With<Player>>,
+    time: Res<Time>,
+) {
+    for (mut sprite, mut transform, mut animation, name) in &mut query {
+        if let Some(atlas) = sprite.texture_atlas.as_mut() {
+            atlas.index = animation.frame;
+        } else {
+            match name.as_str() {
+                "Pupil" => {
+                    let dir = -transform.translation.truncate() + player.translation.truncate();
+                    let target = (&dir.normalize_or_zero() * 50.0).extend(1.0);
+                    transform
+                        .translation
+                        .smooth_nudge(&target, 1.2, time.delta_secs());
+                }
+                "Ring" => {
+                    transform
+                        .rotation
+                        .smooth_nudge(&animation.target, 0.4, time.delta_secs());
+
+                    if (transform.rotation - animation.target).length() < 0.1 {
+                        animation.update_target();
+                    }
+                }
+                _ => {}
+            }
         };
-        atlas.index = animation.frame;
     }
 }

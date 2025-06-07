@@ -8,7 +8,7 @@ use crate::{
         slime::{SlimeAssets, slime},
     },
     player::{
-        character::{PlayerAssets, player},
+        character::{PlayerAssets, PlayerLayoutAssets, player},
         weapon::{WeaponAssets, weapon},
     },
     screens::Screen,
@@ -18,6 +18,7 @@ use crate::{
 pub fn spawn_level(
     mut commands: Commands,
     player_assets: Res<PlayerAssets>,
+    player_layout_assets: Res<PlayerLayoutAssets>,
     weapon_assets: Res<WeaponAssets>,
     slime_assets: Res<SlimeAssets>,
     boss_assets: Res<BossAssets>,
@@ -31,7 +32,10 @@ pub fn spawn_level(
         Transform::default(),
         Visibility::default(),
         StateScoped(Screen::Gameplay),
-        children![player(&player_assets), weapon(&weapon_assets)],
+        children![
+            player(&player_assets, &player_layout_assets),
+            weapon(&weapon_assets)
+        ],
     ));
 
     let red_slime = || slime(&slime_assets, Vec3::new(200.0, 2000.0, 0.0), true);

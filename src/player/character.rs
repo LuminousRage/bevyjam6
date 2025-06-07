@@ -15,9 +15,12 @@ use super::{
 
 pub(super) fn plugin(app: &mut App) {
     app.register_type::<PlayerAssets>();
+    app.register_type::<PlayerLayoutAssets>();
+
     app.load_resource::<PlayerAssets>();
     app.add_systems(Update, player_fall_recovery);
     app.add_systems(Update, reset_player_gravity_scale);
+    app.add_systems(Startup, init_player_layout);
 }
 
 #[derive(Component)]
@@ -30,14 +33,50 @@ pub struct Player {
 #[reflect(Resource)]
 pub struct PlayerAssets {
     #[dependency]
-    pub player: Handle<Image>,
+    pub player_idle: Handle<Image>,
+    #[dependency]
+    pub player_run: Handle<Image>,
+    #[dependency]
+    pub player_dash: Handle<Image>,
+    #[dependency]
+    pub player_jump: Handle<Image>,
+}
+
+fn init_player_layout(
+    mut commands: Commands,
+    mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
+) {
+    let run_layout = TextureAtlasLayout::from_grid(UVec2::new(390, 560), 8, 4, None, None);
+    let jump_layout = TextureAtlasLayout::from_grid(UVec2::new(390, 580), 8, 5, None, None);
+    let idle_layout = TextureAtlasLayout::from_grid(UVec2::new(390, 560), 8, 2, None, None);
+
+    commands.insert_resource(PlayerLayoutAssets {
+        player_idle: texture_atlas_layouts.add(idle_layout),
+        player_run: texture_atlas_layouts.add(run_layout),
+        player_jump: texture_atlas_layouts.add(jump_layout),
+    });
+}
+
+#[derive(Resource, Asset, Clone, Reflect)]
+#[reflect(Resource)]
+pub struct PlayerLayoutAssets {
+    #[dependency]
+    pub player_idle: Handle<TextureAtlasLayout>,
+    #[dependency]
+    pub player_run: Handle<TextureAtlasLayout>,
+    #[dependency]
+    pub player_jump: Handle<TextureAtlasLayout>,
 }
 
 impl FromWorld for PlayerAssets {
     fn from_world(world: &mut World) -> Self {
         let assets = world.resource::<AssetServer>();
+
         Self {
-            player: assets.load("images/player.png"),
+            player_idle: assets.load("images/player/player_idle.png"),
+            player_run: assets.load("images/player/player_run.png"),
+            player_dash: assets.load("images/player/player_dash.png"),
+            player_jump: assets.load("images/player/player_jump.png"),
         }
     }
 }
@@ -66,7 +105,10 @@ fn player_fall_recovery(
     }
 }
 
-pub fn player(player_assets: &PlayerAssets) -> impl Bundle {
+pub fn player(
+    player_assets: &PlayerAssets,
+    player_layout_assets: &PlayerLayoutAssets,
+) -> impl Bundle {
     (
         Name::new("Player"),
         Transform::from_xyz(0.0, 0.0, 2.0),
@@ -74,12 +116,12 @@ pub fn player(player_assets: &PlayerAssets) -> impl Bundle {
             face_direction: Vec2::X,
             attack_direction: Vec2::X,
         },
-        Sprite {
-            image: player_assets.player.clone(),
-            custom_size: Some(Vec2::new(170., 170.0)),
-            image_mode: SpriteImageMode::Scale(ScalingMode::FitCenter),
-            ..default()
-        },
+        PlayerSpriteMode::Idle(false),
+        player_sprite(
+            PlayerSpriteMode::Idle(false),
+            player_assets,
+            player_layout_assets,
+        ),
         CharacterControllerBundle::new(Collider::capsule(15.0, 135.0), Vector::ONE),
         Health::new(CHARACTER_HEALTH),
         Friction::ZERO.with_combine_rule(CoefficientCombine::Min),
@@ -93,4 +135,52 @@ pub fn player(player_assets: &PlayerAssets) -> impl Bundle {
             Transform::default()
         )],
     )
+}
+
+#[derive(Component, Debug)]
+pub enum PlayerSpriteMode {
+    Idle(bool),
+    Run,
+    Dash,
+    Jump,
+}
+
+pub fn player_sprite(
+    mode: PlayerSpriteMode,
+    player_assets: &PlayerAssets,
+    player_layout: &PlayerLayoutAssets,
+) -> Sprite {
+    let (image, texture_atlas) = match mode {
+        PlayerSpriteMode::Idle(_) => (
+            player_assets.player_idle.clone(),
+            Some(TextureAtlas {
+                layout: player_layout.player_idle.clone(),
+                index: 0,
+            }),
+        ),
+        PlayerSpriteMode::Run => (
+            player_assets.player_run.clone(),
+            Some(TextureAtlas {
+                layout: player_layout.player_run.clone(),
+                index: 0,
+            }),
+        ),
+        PlayerSpriteMode::Dash => (player_assets.player_dash.clone(), None),
+        PlayerSpriteMode::Jump => (
+            player_assets.player_jump.clone(),
+            Some(TextureAtlas {
+                layout: player_layout.player_jump.clone(),
+                index: 0,
+            }),
+        ),
+    };
+
+    Sprite {
+        image,
+        // this should fit on y. x is the variable part
+        custom_size: Some(Vec2::new(300., 225.0)),
+        image_mode: SpriteImageMode::Scale(ScalingMode::FitCenter),
+        texture_atlas,
+        ..default()
+    }
 }
