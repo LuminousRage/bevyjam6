@@ -64,7 +64,7 @@ impl PlayerMovementBundle {
     }
 }
 
-#[derive(Component, Reflect, Clone)]
+#[derive(Component, Reflect, Clone, PartialEq, Debug)]
 #[reflect(Component)]
 pub enum PlayerMovementState {
     /// bool is sprite reversing stuff
@@ -98,8 +98,11 @@ fn movement(
                     player.face_direction = *direction;
                     let desired_speed = direction.x * MOVEMENT_SPEED - linear_velocity.x;
                     linear_velocity.x += desired_speed * 10. * delta_time;
-                    *player_movement_state = PlayerMovementState::Run;
-                    sprite_change_event.write(SpriteImageChange(player_movement_state.clone()));
+
+                    if let PlayerMovementState::Idle(_) = *player_movement_state {
+                        sprite_change_event.write(SpriteImageChange(PlayerMovementState::Run));
+                        *player_movement_state = PlayerMovementState::Run;
+                    }
                 }
                 MovementAction::JumpStart => {
                     jump_event_writer.write(JumpingEvent { is_start: true });
