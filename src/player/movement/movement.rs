@@ -6,19 +6,18 @@ use avian2d::{math::*, prelude::*};
 use bevy::prelude::*;
 
 use crate::{
-    physics::creature::{CreaturePhysicsBundle, Flying, Grounded},
+    physics::creature::{CreaturePhysicsBundle, Flying},
     player::{
         character::Player,
         configs::{
-            CHARACTER_GRAVITY_SCALE, DASH_COOLDOWN_DURATION, DASH_DURATION, DASH_SPEED_MODIFIER,
-            JUMP_DURATION_MILLISECONDS, JUMP_IMPULSE, MAX_SLOPE_ANGLE, MOVEMENT_DAMPING,
-            MOVEMENT_SPEED,
+            DASH_COOLDOWN_DURATION, DASH_DURATION, DASH_SPEED_MODIFIER, MAX_SLOPE_ANGLE,
+            MOVEMENT_DAMPING, MOVEMENT_SPEED,
         },
         input::{gamepad_movement_input, keyboard_movement_input},
         movement::{
-            coyote::{Coyote, detect_coyote_time_start, handle_coyote_time},
+            coyote::{detect_coyote_time_start, handle_coyote_time},
             dashing::Dashing,
-            jumping::Jumping,
+            jumping::{JumpingEvent, handle_jump_event},
         },
     },
 };
@@ -34,9 +33,12 @@ pub(super) fn plugin(app: &mut App) {
                 handle_coyote_time,
             ),
             movement,
+            handle_jump_event,
         )
             .chain(),),
     );
+
+    app.register_type::<PlayerMovementState>();
 }
 
 /// An event sent for a movement input action.
@@ -50,34 +52,43 @@ pub enum MovementAction {
 
 /// A bundle that contains components for character movement.
 #[derive(Bundle)]
-pub struct MovementBundle {
+pub struct PlayerMovementBundle {
+    state: PlayerMovementState,
     physics: CreaturePhysicsBundle,
     dashing: Dashing,
 }
 
-impl MovementBundle {
+impl PlayerMovementBundle {
     pub fn new(collider: Collider, scale: Vector) -> Self {
         Self {
+            state: PlayerMovementState::Idle,
             physics: CreaturePhysicsBundle::new(collider, scale, MOVEMENT_DAMPING, MAX_SLOPE_ANGLE),
             dashing: Dashing::new(),
         }
     }
 }
 
-/// Responds to [`MovementAction`] events and moves character controllers accordingly.
-/// TODO: maybe break this up
+#[derive(Component, Reflect)]
+#[reflect(Component)]
+pub enum PlayerMovementState {
+    Idle,
+    Run,
+    Jump(Timer),
+    Dash,
+}
+
 fn movement(
     time: Res<Time>,
     mut commands: Commands,
     mut movement_event_reader: EventReader<MovementAction>,
+    mut jump_event_writer: EventWriter<JumpingEvent>,
     mut controllers: Query<(
         Entity,
         &mut Player,
         &mut LinearVelocity,
-        Has<Grounded>,
         &mut Dashing,
-        Has<Coyote>,
         &mut GravityScale,
+        &PlayerMovementState,
     )>,
 ) {
     // Precision is adjusted so that the example works with
@@ -89,40 +100,27 @@ fn movement(
             entity,
             mut player,
             mut linear_velocity,
-            is_grounded,
             mut dashing,
-            is_coyote,
             mut gravity,
+            player_movement_state,
         ) in &mut controllers
         {
             match event {
                 MovementAction::Move(direction) => {
-                    if dashing.current_duration > 0.0 {
+                    if let PlayerMovementState::Dash = player_movement_state {
+                        // we don't fuck with dashing
                         continue;
                     }
+
                     player.face_direction = *direction;
                     let desired_speed = direction.x * MOVEMENT_SPEED - linear_velocity.x;
                     linear_velocity.x += desired_speed * 10. * delta_time;
                 }
                 MovementAction::JumpStart => {
-                    if is_grounded || is_coyote {
-                        commands.entity(entity).remove::<Grounded>();
-                        commands.entity(entity).remove::<Coyote>();
-
-                        commands
-                            .entity(entity)
-                            .insert(Jumping::new(JUMP_DURATION_MILLISECONDS));
-                        linear_velocity.y += JUMP_IMPULSE;
-                        gravity.0 = 0.5;
-                    }
+                    jump_event_writer.write(JumpingEvent { is_start: true });
                 }
                 MovementAction::JumpEnd => {
-                    // is in air and is going up
-                    if !is_grounded && linear_velocity.y > 0.0 {
-                        commands.entity(entity).remove::<Jumping>();
-                        gravity.0 = CHARACTER_GRAVITY_SCALE;
-                        linear_velocity.y *= 0.5;
-                    }
+                    jump_event_writer.write(JumpingEvent { is_start: false });
                 }
                 MovementAction::Dash => {
                     if dashing.used

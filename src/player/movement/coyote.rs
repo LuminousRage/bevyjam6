@@ -2,10 +2,7 @@ use std::time::Duration;
 
 use bevy::prelude::*;
 
-use crate::{
-    physics::creature::Grounded,
-    player::{character::Player, movement::jumping::Jumping},
-};
+use crate::{physics::creature::Grounded, player::character::Player};
 
 #[derive(Component)]
 #[component(storage = "SparseSet")]
@@ -18,15 +15,7 @@ impl Coyote {
 }
 
 pub fn detect_coyote_time_start(
-    entity: Single<
-        Entity,
-        (
-            With<Player>,
-            With<Grounded>,
-            Without<Coyote>,
-            Without<Jumping>,
-        ),
-    >,
+    entity: Single<Entity, (With<Player>, With<Grounded>, Without<Coyote>)>,
     mut commands: Commands,
 ) {
     commands.entity(*entity).insert(Coyote::new(200));

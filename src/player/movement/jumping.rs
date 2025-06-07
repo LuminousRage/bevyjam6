@@ -1,42 +1,81 @@
-use std::time::Duration;
-
 use avian2d::prelude::{GravityScale, LinearVelocity};
 use bevy::prelude::*;
 
-use crate::player::configs::CHARACTER_GRAVITY_SCALE;
+use crate::{
+    physics::creature::Grounded,
+    player::{
+        character::Player,
+        configs::{CHARACTER_GRAVITY_SCALE, JUMP_DURATION_SECONDS, JUMP_IMPULSE},
+        movement::{coyote::Coyote, movement::PlayerMovementState},
+    },
+};
 
 pub(super) fn plugin(app: &mut App) {
-    app.add_systems(Update, handle_jump_end);
+    app.add_event::<JumpingEvent>();
+    app.add_systems(Update, handle_jump_timer);
 }
 
-#[derive(Component)]
-#[component(storage = "SparseSet")]
-pub struct Jumping {
-    pub duration: Timer,
-    pub cooldown: Timer,
+#[derive(Event)]
+pub struct JumpingEvent {
+    pub is_start: bool,
 }
 
-impl Jumping {
-    pub fn new(duration: u64) -> Jumping {
-        Self {
-            duration: Timer::new(Duration::from_millis(duration), TimerMode::Once),
-            cooldown: Timer::new(Duration::from_millis(100), TimerMode::Once),
+pub fn handle_jump_event(
+    player: Single<
+        (
+            Entity,
+            &mut LinearVelocity,
+            &mut GravityScale,
+            &mut PlayerMovementState,
+            Has<Grounded>,
+            Has<Coyote>,
+        ),
+        With<Player>,
+    >,
+    mut jump_event_reader: EventReader<JumpingEvent>,
+    mut commands: Commands,
+) {
+    let (entity, mut linear_velocity, mut gravity, mut movement_state, is_grounded, is_coyote) =
+        player.into_inner();
+
+    for event in jump_event_reader.read() {
+        match event.is_start {
+            true => {
+                if is_grounded || is_coyote {
+                    commands.entity(entity).remove::<Grounded>();
+                    commands.entity(entity).remove::<Coyote>();
+
+                    *movement_state = PlayerMovementState::Jump(Timer::from_seconds(
+                        JUMP_DURATION_SECONDS,
+                        TimerMode::Once,
+                    ));
+                    linear_velocity.y += JUMP_IMPULSE;
+                    gravity.0 = 0.5;
+                }
+            }
+            false => {
+                if !is_grounded && linear_velocity.y > 0.0 {
+                    gravity.0 = CHARACTER_GRAVITY_SCALE;
+                    linear_velocity.y *= 0.5;
+                }
+            }
         }
     }
 }
 
-fn handle_jump_end(
+fn handle_jump_timer(
     time: Res<Time>,
-    mut commands: Commands,
-    mut query: Query<(Entity, &mut Jumping, &mut GravityScale, &mut LinearVelocity)>,
+    jumping: Single<(&mut PlayerMovementState, Has<Grounded>), With<Player>>,
+    mut jump_event_writer: EventWriter<JumpingEvent>,
 ) {
-    for (entity, mut jumping, mut gravity_scale, mut linear_velocity) in &mut query {
-        jumping.duration.tick(time.delta());
-
-        if jumping.duration.just_finished() {
-            commands.entity(entity).remove::<Jumping>();
-            gravity_scale.0 = CHARACTER_GRAVITY_SCALE;
-            linear_velocity.y *= 0.5;
+    let (mut state, is_grounded) = jumping.into_inner();
+    if let PlayerMovementState::Jump(timer) = &mut *state {
+        timer.tick(time.delta());
+        if timer.just_finished() {
+            jump_event_writer.write(JumpingEvent { is_start: false });
         }
+    }
+    if is_grounded {
+        *state = PlayerMovementState::Idle;
     }
 }

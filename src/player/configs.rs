@@ -9,7 +9,7 @@ pub const MAX_SLOPE_ANGLE: f32 = (30.0 as Scalar).to_radians();
 pub const CHARACTER_GRAVITY_SCALE: f32 = 1.5;
 pub const DASH_DURATION: f32 = 0.216;
 pub const DASH_COOLDOWN_DURATION: f32 = 0.300;
-pub const JUMP_DURATION_MILLISECONDS: u64 = 400;
+pub const JUMP_DURATION_SECONDS: f32 = 0.400;
 
 pub const CHARACTER_HEALTH: f32 = 100.0;
 
