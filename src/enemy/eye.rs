@@ -168,7 +168,7 @@ fn update_eye_animation(
     player: Single<&Transform, With<Player>>,
     time: Res<Time>,
 ) {
-    for (mut sprite, mut transform, mut global_transform, mut animation, name) in &mut query {
+    for (mut sprite, mut transform, global_transform, mut animation, name) in &mut query {
         if let Some(atlas) = sprite.texture_atlas.as_mut() {
             atlas.index = animation.frame;
         } else {

@@ -6,12 +6,7 @@ use bevy::{
 };
 use rand::Rng;
 
-use crate::{
-    enemy::configs::*,
-    health::Health,
-    physics::creature::{CreaturePhysicsBundle, Flying, Grounded},
-    player::movement::CharacterController,
-};
+use crate::{enemy::configs::*, health::Health, player::movement::CharacterController};
 
 pub(super) fn plugin(app: &mut App) {
     app.add_systems(Update, enemy_decision_making);
@@ -43,13 +38,6 @@ pub fn boss(
         Name::new("Boss"),
         the_eye(&eye_assets, texture_atlas_layouts, scale, translation),
         BossController::new(),
-        // Flying,
-        // CreaturePhysicsBundle::new(
-        //     Collider::circle(300.),
-        //     scale,
-        //     MOVEMENT_DAMPING,
-        //     MAX_SLOPE_ANGLE,
-        // ),
         Health::new(BOSS_HEALTH),
         Friction::ZERO.with_combine_rule(CoefficientCombine::Min),
         Restitution::ZERO.with_combine_rule(CoefficientCombine::Min),
@@ -114,9 +102,13 @@ fn enemy_decision_making(
         //good time for a reposition attack?
         if boss.time_until_next_attack <= 0.0
             && relative_coords.length_squared() <= 600_f32.powf(2.)
-            && roll.powf(1. / delta_time)
-                < 1.0 / (1. + exp(-0.7 * (boss.time_since_last_reposition_ended - 15.0)))
+            && roll.powf(1.5 / delta_time)
+                > 1. - 1.0 / (1. + exp(-0.7 * (boss.time_since_last_reposition_ended - 15.0)))
         {
+            dbg!(roll);
+            dbg!(boss.time_since_last_reposition_ended);
+            dbg!(roll.powf(1.5 / delta_time));
+            dbg!(1. - 1.0 / (1. + exp(-0.7 * (boss.time_since_last_reposition_ended - 15.0))));
             boss.time_until_next_attack = BOSS_TIME_BETWEEN_ATTACKS;
             boss.time_since_last_reposition_ended = -TIME_TO_REPOSITION;
             boss.repositioning_to_left = !boss.repositioning_to_left;
