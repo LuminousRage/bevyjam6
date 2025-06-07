@@ -12,7 +12,7 @@ use crate::{
         configs::GRAVITY_ACCELERATION,
         creature::{CreaturePhysicsBundle, Grounded},
     },
-    player::movement::CharacterController,
+    player::character::Player,
 };
 
 pub(super) fn plugin(app: &mut App) {
@@ -89,7 +89,7 @@ impl BossControllerBundle {
 fn enemy_decision_making(
     mut commands: Commands,
     time: Res<Time>,
-    target: Query<&Transform, With<CharacterController>>,
+    target: Single<&Transform, With<Player>>,
     mut slimes: Query<(
         Entity,
         &mut BossController,

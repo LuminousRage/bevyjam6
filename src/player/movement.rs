@@ -8,7 +8,6 @@ use avian2d::{math::*, prelude::*};
 use bevy::prelude::*;
 
 use crate::{
-    collision_layers::GameLayer,
     physics::creature::{CreaturePhysicsBundle, Flying, Grounded},
     player::{
         character::Player,
@@ -54,10 +53,6 @@ pub enum MovementAction {
     JumpEnd,
     Dash,
 }
-
-/// A marker component indicating that an entity is using a character controller.
-#[derive(Component)]
-pub struct CharacterController;
 
 #[derive(Component)]
 #[component(storage = "SparseSet")]
@@ -117,7 +112,6 @@ pub struct JumpImpulse(Scalar);
 /// kinematic character controller.
 #[derive(Bundle)]
 pub struct CharacterControllerBundle {
-    character_controller: CharacterController,
     movement: MovementBundle,
 }
 
@@ -151,7 +145,6 @@ impl MovementBundle {
 impl CharacterControllerBundle {
     pub fn new(collider: Collider, scale: Vector) -> Self {
         Self {
-            character_controller: CharacterController,
             movement: MovementBundle::new(
                 collider,
                 scale,
@@ -251,10 +244,10 @@ fn movement(
 }
 
 pub fn detect_coyote_time_start(
-    query: Query<
+    entity: Single<
         Entity,
         (
-            With<CharacterController>,
+            With<Player>,
             With<Grounded>,
             Without<Coyote>,
             Without<Jumping>,
@@ -262,15 +255,13 @@ pub fn detect_coyote_time_start(
     >,
     mut commands: Commands,
 ) {
-    for entity in query {
-        commands.entity(entity).insert(Coyote::new(200));
-    }
+    commands.entity(*entity).insert(Coyote::new(200));
 }
 
 fn handle_coyote_time(
     time: Res<Time>,
     mut commands: Commands,
-    mut query: Query<(Entity, &mut Coyote), Without<Grounded>>,
+    mut query: Query<(Entity, &mut Coyote), (Without<Grounded>, With<Player>)>,
 ) {
     for (entity, mut coyote) in &mut query {
         coyote.0.tick(time.delta());

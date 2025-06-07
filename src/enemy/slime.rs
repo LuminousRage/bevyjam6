@@ -13,7 +13,7 @@ use crate::{
         configs::GRAVITY_ACCELERATION,
         creature::{CreaturePhysicsBundle, Grounded, MovementDampingFactor},
     },
-    player::movement::CharacterController,
+    player::character::Player,
 };
 
 pub(super) fn plugin(app: &mut App) {
@@ -105,7 +105,7 @@ impl SlimeControllerBundle {
 fn enemy_decision_making(
     mut commands: Commands,
     time: Res<Time>,
-    target: Query<&Transform, With<CharacterController>>,
+    target: Single<&Transform, With<Player>>,
     mut slimes: Query<(
         Entity,
         &mut SlimeController,
@@ -118,7 +118,7 @@ fn enemy_decision_making(
         let delta_time = time.delta_secs_f64().adjust_precision();
         slime.jump_attack_cooldown -= delta_time;
         slime.expected_time_until_jump_hits -= delta_time;
-        let target_coords = target.single().unwrap().translation;
+        let target_coords = target.translation;
         let target_length = target_coords.x - pos.translation.x;
         let target_height = (target_coords.y - pos.translation.y)
             .min(0.5 * JUMP_IMPULSE.powf(2.0) / GRAVITY_ACCELERATION);
