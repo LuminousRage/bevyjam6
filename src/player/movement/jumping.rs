@@ -6,7 +6,9 @@ use crate::{
     player::{
         character::Player,
         configs::{CHARACTER_GRAVITY_SCALE, JUMP_DURATION_SECONDS, JUMP_IMPULSE},
-        movement::{coyote::Coyote, movement::PlayerMovementState},
+        movement::{
+            coyote::Coyote, movement::PlayerMovementState, movement_visual::SpriteImageChange,
+        },
     },
 };
 
@@ -34,6 +36,7 @@ pub fn handle_jump_event(
         With<Player>,
     >,
     mut jump_event_reader: EventReader<JumpingEvent>,
+    mut sprite_change_event: EventWriter<SpriteImageChange>,
     mut commands: Commands,
 ) {
     let (entity, mut linear_velocity, mut gravity, mut movement_state, is_grounded, is_coyote) =
@@ -49,11 +52,11 @@ pub fn handle_jump_event(
                 if is_grounded || is_coyote {
                     commands.entity(entity).remove::<Grounded>();
                     commands.entity(entity).remove::<Coyote>();
-
                     *movement_state = PlayerMovementState::Jump(Timer::from_seconds(
                         JUMP_DURATION_SECONDS,
                         TimerMode::Once,
                     ));
+                    sprite_change_event.write(SpriteImageChange(movement_state.clone()));
                     linear_velocity.y += JUMP_IMPULSE;
                     gravity.0 = 0.5;
                 }
@@ -72,6 +75,7 @@ fn handle_jump_timer(
     time: Res<Time>,
     jumping: Single<(&mut PlayerMovementState, Has<Grounded>), With<Player>>,
     mut jump_event_writer: EventWriter<JumpingEvent>,
+    mut sprite_change_event: EventWriter<SpriteImageChange>,
 ) {
     let (mut state, is_grounded) = jumping.into_inner();
     if let PlayerMovementState::Jump(timer) = &mut *state {
@@ -81,7 +85,8 @@ fn handle_jump_timer(
         }
 
         if is_grounded {
-            *state = PlayerMovementState::Idle;
+            *state = PlayerMovementState::Idle(false);
+            sprite_change_event.write(SpriteImageChange(state.clone()));
         }
     }
 }

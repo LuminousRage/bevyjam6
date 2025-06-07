@@ -1,12 +1,10 @@
-use avian2d::prelude::LinearVelocity;
 use bevy::prelude::*;
 
 use crate::{
     animation::{Animation, reversible_animation},
-    physics::creature::Grounded,
     player::{
-        character::{Player, PlayerAssets, PlayerLayoutAssets, PlayerSpriteMode},
-        movement::movement::MovementAction,
+        character::{Player, PlayerAssets, PlayerLayoutAssets, player_sprite},
+        movement::movement::PlayerMovementState,
     },
 };
 const IDLE_FRAME_NUM: usize = 10;
@@ -14,14 +12,18 @@ const RUN_FRAME_NUM: usize = 32;
 const JUMP_FRAME_NUM: usize = 34;
 
 pub(super) fn plugin(app: &mut App) {
+    app.add_event::<SpriteImageChange>();
     app.add_systems(
         Update,
         (
             update_player_transform,
-            (movement_visual, update_player_sprite_animation).chain(),
+            (update_player_image, update_player_sprite_animation).chain(),
         ),
     );
 }
+
+#[derive(Event)]
+pub struct SpriteImageChange(pub PlayerMovementState);
 
 fn update_player_transform(mut player: Single<(&Player, &mut Transform)>) {
     let (p, transform) = &mut *player;
@@ -29,8 +31,21 @@ fn update_player_transform(mut player: Single<(&Player, &mut Transform)>) {
     transform.scale.x = p.face_direction.x * transform.scale.x.abs();
 }
 
+fn update_player_image(
+    mut sprite: Single<&mut Sprite, With<Player>>,
+    mut image_change_event: EventReader<SpriteImageChange>,
+    player_assets: Res<PlayerAssets>,
+    player_layout: Res<PlayerLayoutAssets>,
+) {
+    for event in image_change_event.read() {
+        let (image, texture_atlas) = player_sprite(event.0.clone(), &player_assets, &player_layout);
+        sprite.image = image;
+        sprite.texture_atlas = texture_atlas;
+    }
+}
+
 fn update_player_sprite_animation(
-    mut player: Single<(&mut Sprite, &mut PlayerSpriteMode), With<Player>>,
+    mut player: Single<(&mut Sprite, &mut PlayerMovementState), With<Player>>,
     animation: Res<Animation>,
 ) {
     let (sprite, player_mode) = &mut *player;
@@ -44,28 +59,13 @@ fn update_player_sprite_animation(
     }
 
     match &mut **player_mode {
-        PlayerSpriteMode::Idle(reverse) => {
+        PlayerMovementState::Idle(reverse) => {
             reversible_animation(reverse, &mut texture_atlas.index, IDLE_FRAME_NUM);
         }
-        PlayerSpriteMode::Run => {}
-        PlayerSpriteMode::Jump => {}
-        PlayerSpriteMode::Dash => {}
+        PlayerMovementState::Run => texture_atlas.index = (texture_atlas.index + 1) % RUN_FRAME_NUM,
+        PlayerMovementState::Jump(_) => {
+            texture_atlas.index = (texture_atlas.index + 1) % JUMP_FRAME_NUM
+        }
+        PlayerMovementState::Dash(_) => {}
     }
-}
-
-fn movement_visual(
-    time: Res<Time>,
-    mut commands: Commands,
-    mut movement_event_reader: EventReader<MovementAction>,
-    mut controllers: Single<(
-        Entity,
-        &mut Player,
-        &mut Sprite,
-        &mut LinearVelocity,
-        Has<Grounded>,
-    )>,
-    player_assets: Res<PlayerAssets>,
-    player_layout: Res<PlayerLayoutAssets>,
-) {
-    let (entity, player, sprite, lv, is_grounded) = &mut *controllers;
 }

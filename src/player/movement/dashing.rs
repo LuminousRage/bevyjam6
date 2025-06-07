@@ -12,7 +12,7 @@ use crate::{
             CHARACTER_GRAVITY_SCALE, DASH_COOLDOWN_DURATION, DASH_DURATION, DASH_SPEED_MODIFIER,
             JUMP_DURATION_SECONDS, MOVEMENT_SPEED,
         },
-        movement::movement::PlayerMovementState,
+        movement::{movement::PlayerMovementState, movement_visual::SpriteImageChange},
     },
 };
 
@@ -46,6 +46,7 @@ pub fn handle_dash_event(
         Has<DashingCooldown>,
     )>,
     mut dash_event_reader: EventReader<DashingEvent>,
+    mut sprite_change_event: EventWriter<SpriteImageChange>,
     mut commands: Commands,
 ) {
     let (
@@ -74,6 +75,7 @@ pub fn handle_dash_event(
                 gravity.0 = 0.0;
                 commands.entity(entity).insert(DashingUsed);
                 *movement_state = PlayerMovementState::Dash(DASH_DURATION);
+                sprite_change_event.write(SpriteImageChange(movement_state.clone()));
             }
             false => {
                 commands.entity(entity).remove::<Flying>();
@@ -83,6 +85,7 @@ pub fn handle_dash_event(
                     JUMP_DURATION_SECONDS,
                     TimerMode::Once,
                 ));
+                sprite_change_event.write(SpriteImageChange(movement_state.clone()));
                 commands
                     .entity(entity)
                     .insert(DashingCooldown(Timer::from_seconds(

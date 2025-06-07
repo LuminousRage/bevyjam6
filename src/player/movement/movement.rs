@@ -15,6 +15,7 @@ use crate::{
             coyote::{detect_coyote_time_start, handle_coyote_time},
             dashing::{DashingEvent, handle_dash_event},
             jumping::{JumpingEvent, handle_jump_event},
+            movement_visual::SpriteImageChange,
         },
     },
 };
@@ -57,16 +58,17 @@ pub struct PlayerMovementBundle {
 impl PlayerMovementBundle {
     pub fn new(collider: Collider, scale: Vector) -> Self {
         Self {
-            state: PlayerMovementState::Idle,
+            state: PlayerMovementState::Idle(false),
             physics: CreaturePhysicsBundle::new(collider, scale, MOVEMENT_DAMPING, MAX_SLOPE_ANGLE),
         }
     }
 }
 
-#[derive(Component, Reflect)]
+#[derive(Component, Reflect, Clone)]
 #[reflect(Component)]
 pub enum PlayerMovementState {
-    Idle,
+    /// bool is sprite reversing stuff
+    Idle(bool),
     Run,
     Jump(Timer),
     Dash(f32),
@@ -77,17 +79,18 @@ fn movement(
     mut movement_event_reader: EventReader<MovementAction>,
     mut jump_event_writer: EventWriter<JumpingEvent>,
     mut dash_event_writer: EventWriter<DashingEvent>,
-    mut controllers: Query<(&mut Player, &mut LinearVelocity, &PlayerMovementState)>,
+    mut sprite_change_event: EventWriter<SpriteImageChange>,
+    mut controllers: Query<(&mut Player, &mut LinearVelocity, &mut PlayerMovementState)>,
 ) {
     // Precision is adjusted so that the example works with
     // both the `f32` and `f64` features. Otherwise you don't need this.
     let delta_time = time.delta_secs_f64().adjust_precision();
 
     for event in movement_event_reader.read() {
-        for (mut player, mut linear_velocity, player_movement_state) in &mut controllers {
+        for (mut player, mut linear_velocity, mut player_movement_state) in &mut controllers {
             match event {
                 MovementAction::Move(direction) => {
-                    if let PlayerMovementState::Dash(_) = player_movement_state {
+                    if let PlayerMovementState::Dash(_) = *player_movement_state {
                         // we don't fuck with dashing
                         continue;
                     }
@@ -95,6 +98,8 @@ fn movement(
                     player.face_direction = *direction;
                     let desired_speed = direction.x * MOVEMENT_SPEED - linear_velocity.x;
                     linear_velocity.x += desired_speed * 10. * delta_time;
+                    *player_movement_state = PlayerMovementState::Run;
+                    sprite_change_event.write(SpriteImageChange(player_movement_state.clone()));
                 }
                 MovementAction::JumpStart => {
                     jump_event_writer.write(JumpingEvent { is_start: true });

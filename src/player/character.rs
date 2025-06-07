@@ -6,7 +6,7 @@ use crate::{
     collision_layers::player_hurt_boxes,
     health::{Health, hurtbox_prefab},
     physics::creature::Grounded,
-    player::movement::movement::PlayerMovementBundle,
+    player::movement::movement::{PlayerMovementBundle, PlayerMovementState},
 };
 
 use super::configs::{CHARACTER_GRAVITY_SCALE, CHARACTER_HEALTH};
@@ -107,6 +107,9 @@ pub fn player(
     player_assets: &PlayerAssets,
     player_layout_assets: &PlayerLayoutAssets,
 ) -> impl Bundle {
+    let movement_state = PlayerMovementState::Idle(false);
+    let (image, texture_atlas) =
+        player_sprite(movement_state.clone(), player_assets, player_layout_assets);
     (
         Name::new("Player"),
         Transform::from_xyz(0.0, 0.0, 2.0),
@@ -114,12 +117,14 @@ pub fn player(
             face_direction: Vec2::X,
             attack_direction: Vec2::X,
         },
-        PlayerSpriteMode::Idle(false),
-        player_sprite(
-            PlayerSpriteMode::Idle(false),
-            player_assets,
-            player_layout_assets,
-        ),
+        Sprite {
+            image,
+            // this should fit on y. x is the variable part
+            custom_size: Some(Vec2::new(300., 225.0)),
+            image_mode: SpriteImageMode::Scale(ScalingMode::FitCenter),
+            texture_atlas,
+            ..default()
+        },
         PlayerMovementBundle::new(Collider::capsule(15.0, 135.0), Vector::ONE),
         Health::new(CHARACTER_HEALTH),
         Friction::ZERO.with_combine_rule(CoefficientCombine::Min),
@@ -135,50 +140,33 @@ pub fn player(
     )
 }
 
-#[derive(Component, Debug)]
-pub enum PlayerSpriteMode {
-    Idle(bool),
-    Run,
-    Dash,
-    Jump,
-}
-
 pub fn player_sprite(
-    mode: PlayerSpriteMode,
+    mode: PlayerMovementState,
     player_assets: &PlayerAssets,
     player_layout: &PlayerLayoutAssets,
-) -> Sprite {
-    let (image, texture_atlas) = match mode {
-        PlayerSpriteMode::Idle(_) => (
+) -> (Handle<Image>, Option<TextureAtlas>) {
+    match mode {
+        PlayerMovementState::Idle(_) => (
             player_assets.player_idle.clone(),
             Some(TextureAtlas {
                 layout: player_layout.player_idle.clone(),
                 index: 0,
             }),
         ),
-        PlayerSpriteMode::Run => (
+        PlayerMovementState::Run => (
             player_assets.player_run.clone(),
             Some(TextureAtlas {
                 layout: player_layout.player_run.clone(),
                 index: 0,
             }),
         ),
-        PlayerSpriteMode::Dash => (player_assets.player_dash.clone(), None),
-        PlayerSpriteMode::Jump => (
+        PlayerMovementState::Dash(_) => (player_assets.player_dash.clone(), None),
+        PlayerMovementState::Jump(_) => (
             player_assets.player_jump.clone(),
             Some(TextureAtlas {
                 layout: player_layout.player_jump.clone(),
                 index: 0,
             }),
         ),
-    };
-
-    Sprite {
-        image,
-        // this should fit on y. x is the variable part
-        custom_size: Some(Vec2::new(300., 225.0)),
-        image_mode: SpriteImageMode::Scale(ScalingMode::FitCenter),
-        texture_atlas,
-        ..default()
     }
 }
