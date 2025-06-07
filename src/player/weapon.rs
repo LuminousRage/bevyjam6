@@ -5,7 +5,7 @@ use crate::{
     asset_tracking::LoadResource,
     collision_layers::player_hit_boxes,
     health::hitbox_prefab,
-    player::attack::{Attack, AttackPhase, DoAttackEvent},
+    player::attack::behaviour::{Attack, AttackPhase, DoAttackEvent},
 };
 
 use super::character::Player;

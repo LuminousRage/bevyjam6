@@ -25,10 +25,7 @@ pub fn spawn_level(
         Transform::default(),
         Visibility::default(),
         StateScoped(Screen::Gameplay),
-        children![
-            player(&player_assets, &mut meshes, &mut materials),
-            weapon(&weapon_assets)
-        ],
+        children![player(&player_assets), weapon(&weapon_assets)],
     ));
 
     let slime = || slime(&slime_assets, Vec3::new(200.0, 2000.0, 0.0));
