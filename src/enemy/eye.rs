@@ -39,7 +39,7 @@ pub fn the_eye(
 ) -> impl Bundle {
     // A texture atlas is a way to split a single image into a grid of related images.
     // You can learn more in this example: https://github.com/bevyengine/bevy/blob/latest/examples/2d/texture_atlas.rs
-    let layout = TextureAtlasLayout::from_grid(UVec2::new(1500, 1006), 10, 5, None, None);
+    let layout = TextureAtlasLayout::from_grid(UVec2::new(1500, 1006), 10, 12, None, None);
     let texture_atlas_layout = texture_atlas_layouts.add(layout);
     // let player_animation = PlayerAnimation::new();
 
@@ -66,10 +66,10 @@ pub struct EyeAnimation {
 }
 
 impl EyeAnimation {
-    const NUM_FRAMES: usize = 50;
+    const NUM_FRAMES: usize = 120;
     pub fn new() -> Self {
         Self {
-            timer: Timer::from_seconds(0.15, TimerMode::Repeating),
+            timer: Timer::from_seconds(0.05, TimerMode::Repeating),
             frame: 0,
         }
     }
