@@ -19,7 +19,8 @@ use crate::{
 pub(super) fn plugin(app: &mut App) {
     app.register_type::<SlimeAssets>();
     app.load_resource::<SlimeAssets>()
-        .add_systems(Update, (enemy_decision_making, kill_slimes));
+        .add_systems(Update, enemy_decision_making)
+        .add_systems(Last, kill_slimes);
 }
 
 #[derive(Resource, Asset, Clone, Reflect)]
