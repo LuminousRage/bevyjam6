@@ -35,13 +35,14 @@ const EXTEND_SIZE: u64 = 604;
 pub const WEAPON_SCALE_FACTOR: f32 = 0.065;
 const WEAPON_FOLLOW_OFFSET: Vec3 = Vec3::new(55.0, -35.0, -1.0);
 
-pub const WEAPON_HITBOX_NAME: &'static str = "Weapon Hitbox";
-
 #[derive(Component)]
 pub struct Weapon;
 
 #[derive(Component)]
-pub struct WeaponParts;
+pub struct WeaponHitbox;
+
+#[derive(Component)]
+pub struct ItHitSomething;
 
 #[derive(Component)]
 pub struct WeaponGlow;
@@ -150,7 +151,6 @@ pub fn weapon(weapon_assets: &WeaponAssets) -> impl Bundle {
             (
                 Name::new("Weapon Base"),
                 Transform::from_xyz(0.0, 0.0, 0.0),
-                WeaponParts,
                 Sprite {
                     image: weapon_assets.weapon_base.clone(),
                     anchor: Anchor::BottomCenter,
@@ -160,7 +160,6 @@ pub fn weapon(weapon_assets: &WeaponAssets) -> impl Bundle {
             (
                 Name::new("Weapon Extend"),
                 Transform::from_xyz(0.0, OFFSET_FROM_BASE as f32, 0.0),
-                WeaponParts,
                 Sprite {
                     image: weapon_assets.weapon_extend.clone(),
                     anchor: Anchor::BottomCenter,
@@ -170,7 +169,6 @@ pub fn weapon(weapon_assets: &WeaponAssets) -> impl Bundle {
             (
                 Name::new("Weapon Head"),
                 Transform::from_xyz(0.0, (OFFSET_FROM_EXTEND + OFFSET_FROM_BASE) as f32, 0.0),
-                WeaponParts,
                 Sprite {
                     image: weapon_assets.weapon_head.clone(),
                     anchor: Anchor::BottomCenter,
@@ -186,12 +184,12 @@ pub fn weapon(weapon_assets: &WeaponAssets) -> impl Bundle {
                             10.0,
                             Transform::from_xyz(0.0, 1250.0, 0.0)
                         ),
+                        WeaponHitbox,
                         ColliderDisabled
                     ),
                     (
                         Name::new("Weapon Glow"),
                         Transform::from_xyz(0.0, 0., 1.0),
-                        WeaponParts,
                         WeaponGlow,
                         Visibility::Hidden,
                         Sprite {

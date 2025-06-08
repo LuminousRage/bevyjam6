@@ -10,7 +10,7 @@ use crate::{
         },
         character::Player,
         input::{gamepad_attack_input, keyboard_attack_input},
-        weapon::WEAPON_HITBOX_NAME,
+        weapon::WeaponHitbox,
     },
 };
 
@@ -36,7 +36,7 @@ pub(super) fn plugin(app: &mut App) {
 
 fn attack_handler(
     mut player: Single<(Option<&mut Attack>, Entity, &Transform, &Player)>,
-    fuckin_cooliders: Query<(&Name, Entity, &Collider)>,
+    fuckin_cooliders: Single<Entity, (With<Collider>, With<WeaponHitbox>)>,
     mut input_event: EventReader<InputAttackEvent>,
     mut commands: Commands,
     time: Res<Time>,
@@ -56,13 +56,6 @@ fn attack_handler(
         }
     };
 
-    // unwrapping here because, i can't really imaging how this entity is just gone, we'd be really fucked
-    let the_one_i_need = fuckin_cooliders
-        .iter()
-        .find(|(name, _, _)| name.contains(WEAPON_HITBOX_NAME))
-        .unwrap()
-        .1;
-
     attack.phase.tick(time.delta());
 
     match &mut attack.phase {
@@ -74,7 +67,9 @@ fn attack_handler(
                     is_in_attack_delay: false,
                 };
                 sound_event.write(AttackSound::Slash);
-                commands.entity(the_one_i_need).remove::<ColliderDisabled>();
+                commands
+                    .entity(fuckin_cooliders.entity())
+                    .remove::<ColliderDisabled>();
             }
         }
         // Attacking is handled by animation
@@ -84,7 +79,9 @@ fn attack_handler(
             is_in_attack_delay: didithit,
         } => {}
         AttackPhase::Ready(timer) => {
-            commands.entity(the_one_i_need).insert(ColliderDisabled);
+            commands
+                .entity(fuckin_cooliders.entity())
+                .insert(ColliderDisabled);
             if timer.just_finished() {
                 attack.update_fury(false);
                 // if we are in ready phase, we can start cooling down
@@ -127,7 +124,6 @@ fn do_attack(
                     attack.phase = AttackPhase::new_cooling_timer();
                 }
             } else {
-                // figure out how to get this
                 let delay_seconds = attack.attack_delay_seconds;
 
                 if collision {
