@@ -10,7 +10,10 @@ use crate::{
 };
 
 pub(super) fn plugin(app: &mut App) {
-    app.add_systems(OnEnter(Screen::Loading), spawn_loading_screen);
+    app.add_systems(
+        OnEnter(Screen::Loading),
+        spawn_loading_screen.run_if(resource_exists::<TitleAssets>),
+    );
 
     app.add_systems(
         Update,
