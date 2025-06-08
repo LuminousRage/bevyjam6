@@ -73,12 +73,6 @@ fn get_game_script() -> ScriptEventQueue {
     let queue = vec![
         ScriptEvent::WaitForSlimesDead,
         ScriptEvent::Wait(1.0),
-        //TODO: this part should be in a different scene so it will be removed
-        ScriptEvent::Dialogue("Narrator","[Ali, young and often overlooked by his family of skilled magicians, has always felt like an outsider. While they hone their craft and perfect their magic, he longs for something more power. Power that will earn their respect and prove he's more than just a boy. He's heard rumors of a hidden room deep within the estate, a forgotten chamber holding the family's most guarded secrets.]"),
-        ScriptEvent::Dialogue("Narrator","[Inside, the room is filled with shelves, each piled high with books some ancient, some newly bound, all forgotten with time. But one catches his eye. A book, untouched, as if it has never seen the passing years. ]"),
-        ScriptEvent::Dialogue("Narrator","[As his fingers brush its cover, the air around him shifts. The other books begin to crumble, turning to dust, one after another, as if drawn into an inevitable collapse. A chain reaction. ]"),
-        ScriptEvent::Dialogue("Narrator","[The book grows heavier in his hands, reluctant to release him. Something unseen tugs at him, pulling him in. He opens it. A sharp pain lances through his skull.]"),
-        ScriptEvent::Dialogue("Narrator","[And then...darkness.]"),
         ScriptEvent::WaitForSlimesDead,
         ScriptEvent::Wait(3.0),
         ScriptEvent::Dialogue("Narrator","[As Ali regains consciousness, a voice echoes in his mind, sharp and demanding.]"),
