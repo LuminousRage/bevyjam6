@@ -9,6 +9,7 @@ use crate::{
     asset_tracking::LoadResource,
     collision_layers::GameLayer,
     enemy::{
+        boss::boss,
         eye::{EyeAssets, the_eye},
         slime::{SlimeAssets, slime},
     },
@@ -92,6 +93,8 @@ pub fn spawn_level(
     player_layout_assets: Res<PlayerLayoutAssets>,
     weapon_assets: Res<WeaponAssets>,
     slime_assets: Res<SlimeAssets>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
     level_assets: Res<LevelAssets>,
     mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
     eye_assets: Res<EyeAssets>,
@@ -146,9 +149,16 @@ pub fn spawn_level(
         ],
     ));
 
-    let slime = || slime(&slime_assets, Vec3::new(200.0, 2000.0, 0.0));
-    commands.spawn(the_eye(&eye_assets, &mut texture_atlas_layouts));
-    commands.spawn(slime());
+    let red_slime = || slime(&slime_assets, Vec3::new(200.0, 2000.0, 0.0), true);
+    let black_slime = || slime(&slime_assets, Vec3::new(-200.0, 2000.0, 0.0), false);
+
+    commands.spawn(red_slime());
+    commands.spawn(black_slime());
+    commands.spawn(boss(
+        &eye_assets,
+        &mut texture_atlas_layouts,
+        Vec3::new(-200.0, 100.0, 0.0),
+    ));
     // commands.spawn(slime());
 
     commands.spawn((

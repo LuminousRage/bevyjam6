@@ -1,9 +1,15 @@
 use std::time::Duration;
 
+use avian2d::prelude::Collider;
 use bevy::prelude::*;
 
 use crate::{
-    animation::reversible_animation, asset_tracking::LoadResource, player::character::Player,
+    animation::reversible_animation,
+    asset_tracking::LoadResource,
+    collision_layers::{enemy_hit_boxes, enemy_hurt_boxes},
+    enemy::boss::BossController,
+    health::{hitbox_prefab, hurtbox_prefab},
+    player::character::Player,
 };
 
 pub(super) fn plugin(app: &mut App) {
@@ -53,18 +59,31 @@ impl FromWorld for EyeAssets {
 pub fn the_eye(
     eye_assets: &EyeAssets,
     texture_atlas_layouts: &mut Assets<TextureAtlasLayout>,
+    scale: Vec2,
+    translation: Vec3,
 ) -> impl Bundle {
     // A texture atlas is a way to split a single image into a grid of related images.
     // You can learn more in this example: https://github.com/bevyengine/bevy/blob/latest/examples/2d/texture_atlas.rs
     let layout = TextureAtlasLayout::from_grid(UVec2::new(1500, 1006), 5, 6, None, None);
     let texture_atlas_layout = texture_atlas_layouts.add(layout);
-    // let player_animation = PlayerAnimation::new();
 
     (
-        Name::new("The Eye"),
-        Transform::from_scale(Vec2::splat(0.5).extend(1.0)),
         Visibility::default(),
+        Transform::from_scale(scale.extend(1.0)).with_translation(translation),
         children![
+            hurtbox_prefab(
+                Collider::circle(100.),
+                enemy_hurt_boxes(),
+                0.0,
+                Transform::default()
+            ),
+            hitbox_prefab(
+                Collider::circle(100.),
+                enemy_hit_boxes(),
+                0.0,
+                10.0,
+                Transform::default()
+            ),
             (
                 Name::new("Wings"),
                 Sprite {
@@ -90,7 +109,8 @@ pub fn the_eye(
             (
                 Name::new("Pupil"),
                 Sprite::from_image(eye_assets.pupil.clone()),
-                EyeAnimation::new()
+                EyeAnimation::new(),
+                Pupil
             ),
             (Name::new("Eye"), Sprite::from_image(eye_assets.eye.clone())),
         ],
@@ -99,6 +119,8 @@ pub fn the_eye(
 
 // The whole code below can do some refactoring
 
+#[derive(Component)]
+pub struct Pupil;
 #[derive(Component)]
 pub struct EyeAnimation {
     timer: Timer,
@@ -137,17 +159,36 @@ fn animation_updater(mut query: Query<&mut EyeAnimation>, time: Res<Time>) {
 }
 
 fn update_eye_animation(
-    mut query: Query<(&mut Sprite, &mut Transform, &mut EyeAnimation, &Name), Without<Player>>,
+    mut query: Query<
+        (
+            &mut Sprite,
+            &mut Transform,
+            &mut GlobalTransform,
+            &mut EyeAnimation,
+            &Name,
+        ),
+        Without<Player>,
+    >,
     player: Single<&Transform, With<Player>>,
+    boss: Single<&BossController>,
     time: Res<Time>,
 ) {
-    for (mut sprite, mut transform, mut animation, name) in &mut query {
+    for (mut sprite, mut transform, global_transform, mut animation, name) in &mut query {
         if let Some(atlas) = sprite.texture_atlas.as_mut() {
             atlas.index = animation.frame;
         } else {
+            //Marker? I hardly know 'er
             match name.as_str() {
                 "Pupil" => {
-                    let dir = -transform.translation.truncate() + player.translation.truncate();
+                    if boss.beam_lazer_remaining_duration > 0.0 {
+                        continue;
+                    }
+                    let dir = if boss.sky_lazer_remaining_duration > 0.0 {
+                        Vec2::new(0., 1.)
+                    } else {
+                        player.translation.truncate() - global_transform.translation().truncate()
+                    };
+
                     let target = (&dir.normalize_or_zero() * 50.0).extend(1.0);
                     transform
                         .translation
