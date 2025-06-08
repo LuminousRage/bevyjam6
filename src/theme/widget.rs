@@ -8,7 +8,10 @@ use bevy::{
     ui::Val::*,
 };
 
-use crate::theme::{interaction::InteractionPalette, palette::*};
+use crate::{
+    screens::title::TitleAssets,
+    theme::{interaction::InteractionPalette, palette::*},
+};
 
 /// A root UI node that fills the window and centers its content.
 pub fn ui_root(name: impl Into<Cow<'static, str>>) -> impl Bundle {
@@ -26,6 +29,20 @@ pub fn ui_root(name: impl Into<Cow<'static, str>>) -> impl Bundle {
         },
         // Don't block picking events for other UI roots.
         Pickable::IGNORE,
+    )
+}
+
+/// A simple header label. Bigger than [`label`].
+pub fn title(text: impl Into<String>, title_assets: &TitleAssets) -> impl Bundle {
+    (
+        Name::new("Title"),
+        Text(text.into()),
+        TextFont {
+            font: title_assets.allura.clone(),
+            font_size: 120.0,
+            ..default()
+        },
+        TextColor(TITLE_TEXT),
     )
 }
 

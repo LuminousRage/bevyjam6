@@ -2,19 +2,26 @@
 
 use bevy::prelude::*;
 
-use crate::{asset_tracking::ResourceHandles, menus::Menu, screens::Screen, theme::widget};
+use crate::{
+    GAME_NAME,
+    asset_tracking::ResourceHandles,
+    menus::Menu,
+    screens::{Screen, title::TitleAssets},
+    theme::widget,
+};
 
 pub(super) fn plugin(app: &mut App) {
     app.add_systems(OnEnter(Menu::Main), spawn_main_menu);
 }
 
-fn spawn_main_menu(mut commands: Commands) {
+fn spawn_main_menu(mut commands: Commands, title_assets: Res<TitleAssets>) {
     commands.spawn((
         widget::ui_root("Main Menu"),
         GlobalZIndex(2),
         StateScoped(Menu::Main),
         #[cfg(not(target_family = "wasm"))]
         children![
+            widget::title(GAME_NAME, &title_assets),
             widget::button("Start", enter_loading_or_gameplay_screen),
             widget::button("Settings", open_settings_menu),
             widget::button("Credits", open_credits_menu),
@@ -22,6 +29,7 @@ fn spawn_main_menu(mut commands: Commands) {
         ],
         #[cfg(target_family = "wasm")]
         children![
+            widget::title(GAME_NAME, &title_assets),
             widget::button("Start", enter_loading_or_gameplay_screen),
             widget::button("Settings", open_settings_menu),
             widget::button("Credits", open_credits_menu),

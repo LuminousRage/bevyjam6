@@ -26,6 +26,8 @@ use bevy_inspector_egui::{bevy_egui::EguiPlugin, quick::WorldInspectorPlugin};
 
 use crate::physics::configs::GRAVITY_ACCELERATION;
 
+pub const GAME_NAME: &'static str = "Vision of Asad";
+
 fn main() -> AppExit {
     App::new().add_plugins(AppPlugin).run()
 }
@@ -46,7 +48,7 @@ impl Plugin for AppPlugin {
                 })
                 .set(WindowPlugin {
                     primary_window: Window {
-                        title: "Bevyjam6".to_string(),
+                        title: GAME_NAME.to_string(),
                         fit_canvas_to_parent: true,
                         ..default()
                     }

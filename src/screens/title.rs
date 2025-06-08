@@ -55,9 +55,13 @@ fn spawn_title_screen(mut commands: Commands, asset_server: Res<AssetServer>) {
 
 #[derive(Resource, Asset, Clone, Reflect)]
 #[reflect(Resource)]
-struct TitleAssets {
+pub struct TitleAssets {
     #[dependency]
-    music: Handle<AudioSource>,
+    pub music: Handle<AudioSource>,
+    #[dependency]
+    pub allura: Handle<Font>,
+    #[dependency]
+    pub crimson: Handle<Font>,
 }
 
 impl FromWorld for TitleAssets {
@@ -65,6 +69,8 @@ impl FromWorld for TitleAssets {
         let assets = world.resource::<AssetServer>();
         Self {
             music: assets.load("audio/music/Elevator_Music_V1.ogg"),
+            allura: assets.load("fonts/Allura/Allura-Regular.ttf"),
+            crimson: assets.load("fonts/Crimson_Text/CrimsonText-Regular.ttf"),
         }
     }
 }
