@@ -35,8 +35,6 @@ const EXTEND_SIZE: u64 = 604;
 pub const WEAPON_SCALE_FACTOR: f32 = 0.065;
 const WEAPON_FOLLOW_OFFSET: Vec3 = Vec3::new(55.0, -35.0, -1.0);
 
-const INACTIVE_WEAPON_TRANSPARENCY: f32 = 0.7;
-
 #[derive(Component)]
 pub struct Weapon;
 
@@ -137,7 +135,7 @@ fn update_weapon_length(
     }
 }
 
-pub fn weapon(player_assets: &WeaponAssets) -> impl Bundle {
+pub fn weapon(weapon_assets: &WeaponAssets) -> impl Bundle {
     (
         Name::new("Weapon"),
         Weapon,
@@ -152,7 +150,7 @@ pub fn weapon(player_assets: &WeaponAssets) -> impl Bundle {
                 Transform::from_xyz(0.0, 0.0, 0.0),
                 WeaponParts,
                 Sprite {
-                    image: player_assets.weapon_base.clone(),
+                    image: weapon_assets.weapon_base.clone(),
                     anchor: Anchor::BottomCenter,
                     ..default()
                 }
@@ -162,7 +160,7 @@ pub fn weapon(player_assets: &WeaponAssets) -> impl Bundle {
                 Transform::from_xyz(0.0, OFFSET_FROM_BASE as f32, 0.0),
                 WeaponParts,
                 Sprite {
-                    image: player_assets.weapon_extend.clone(),
+                    image: weapon_assets.weapon_extend.clone(),
                     anchor: Anchor::BottomCenter,
                     ..default()
                 }
@@ -172,7 +170,7 @@ pub fn weapon(player_assets: &WeaponAssets) -> impl Bundle {
                 Transform::from_xyz(0.0, (OFFSET_FROM_EXTEND + OFFSET_FROM_BASE) as f32, 0.0),
                 WeaponParts,
                 Sprite {
-                    image: player_assets.weapon_head.clone(),
+                    image: weapon_assets.weapon_head.clone(),
                     anchor: Anchor::BottomCenter,
                     ..default()
                 },
@@ -191,7 +189,7 @@ pub fn weapon(player_assets: &WeaponAssets) -> impl Bundle {
                         WeaponGlow,
                         Visibility::Hidden,
                         Sprite {
-                            image: player_assets.weapon_glow_purple.clone(),
+                            image: weapon_assets.weapon_glow_purple.clone(),
                             anchor: Anchor::BottomCenter,
                             ..default()
                         }
@@ -204,7 +202,7 @@ pub fn weapon(player_assets: &WeaponAssets) -> impl Bundle {
 
 fn move_weapon_while_idle(
     mut following: Single<&mut Transform, With<Weapon>>,
-    mut following_parts: Query<&mut Sprite, With<WeaponParts>>,
+    mut weapon_glow: Single<&mut Visibility, With<WeaponGlow>>,
     player_without_attack: Option<
         Single<(&Transform, &Player), (Without<Weapon>, Without<Attack>)>,
     >,
@@ -219,10 +217,8 @@ fn move_weapon_while_idle(
     };
 
     let delta_time = time.delta_secs();
+    **weapon_glow = Visibility::Hidden;
 
-    following_parts.iter_mut().for_each(|mut sprite| {
-        sprite.color = color_with_transparency(INACTIVE_WEAPON_TRANSPARENCY);
-    });
     following.scale = {
         let Vec3 { x, y, z } = following.scale;
         let direction = if following.translation.x > transform.translation.x {
@@ -242,9 +238,10 @@ fn move_weapon_while_idle(
 
 fn move_weapon_while_attack(
     mut following: Single<&mut Transform, With<Weapon>>,
-    mut following_parts: Query<&mut Sprite, With<WeaponParts>>,
+    mut weapon_glow: Single<(&mut Sprite, &mut Visibility), With<WeaponGlow>>,
     player_with_attack: Option<Single<(&Transform, &Player, &Attack), Without<Weapon>>>,
     mut do_attack_event: EventWriter<DoAttackEvent>,
+    weapon_assets: Res<WeaponAssets>,
     time: Res<Time>,
 ) {
     let (transform, player, attack) = match player_with_attack {
@@ -256,12 +253,14 @@ fn move_weapon_while_attack(
     };
     let delta_time = time.delta_secs();
 
+    let (mut glow_sprite, mut glow_visibility) = weapon_glow.into_inner();
+
     match &attack.phase {
         AttackPhase::Reacting(timer) => {
-            let transparency = color_with_transparency(timer_to_transparency(timer));
-            following_parts.iter_mut().for_each(|mut sprite| {
-                sprite.color = transparency;
-            });
+            glow_sprite.color = color_with_transparency(timer_to_transparency(timer));
+            glow_sprite.image = weapon_assets.weapon_glow_red.clone();
+            *glow_visibility = Visibility::Inherited;
+
             following.rotation = Quat::from_rotation_z(Vec2::Y.angle_to(player.attack_direction));
             following.scale = attack.position.get_scale(player.attack_direction)
                 * Vec2::splat(WEAPON_SCALE_FACTOR).extend(1.0);
@@ -284,10 +283,11 @@ fn move_weapon_while_attack(
                 .smooth_nudge(&(pos + target_position), decay_rate, delta_time);
         }
         AttackPhase::Ready(timer) => {
-            let transparency = color_with_transparency(timer_to_transparency(timer));
-            following_parts.iter_mut().for_each(|mut sprite| {
-                sprite.color = transparency;
-            });
+            glow_sprite.color = color_with_transparency(timer_to_transparency(timer));
+            glow_sprite.image = weapon_assets.weapon_glow_purple.clone();
+
+            *glow_visibility = Visibility::Inherited;
+
             following.rotation = Quat::from_rotation_z(Vec2::Y.angle_to(player.attack_direction));
             following.scale = attack.position.get_scale(player.attack_direction)
                 * Vec2::splat(WEAPON_SCALE_FACTOR).extend(1.0);
@@ -297,7 +297,21 @@ fn move_weapon_while_attack(
                 delta_time,
             );
         }
-        AttackPhase::Cooling(timer) => {}
+        AttackPhase::Cooling(timer) => {
+            glow_sprite.color = color_with_transparency(timer_to_transparency(timer));
+            glow_sprite.image = weapon_assets.weapon_glow_blue.clone();
+
+            *glow_visibility = Visibility::Inherited;
+
+            following.rotation = Quat::from_rotation_z(Vec2::Y.angle_to(player.attack_direction));
+            following.scale = attack.position.get_scale(player.attack_direction)
+                * Vec2::splat(WEAPON_SCALE_FACTOR).extend(1.0);
+            following.translation.smooth_nudge(
+                &(transform.translation + attack.position.get_translate(player.attack_direction)),
+                10.0,
+                delta_time,
+            );
+        }
     }
 }
 
