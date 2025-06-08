@@ -276,7 +276,7 @@ fn move_weapon_while_attack(
             if (following.translation - (pos + target_position)).length() < 1.0 {
                 do_attack_event.write(DoAttackEvent);
             }
-            let decay_rate = exp(2.7 * (-attack.attack_delay + 2.7));
+            let decay_rate = exp(2.7 * (-attack.attack_delay_seconds + 2.7));
 
             following
                 .translation

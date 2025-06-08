@@ -37,7 +37,7 @@ pub struct Attack {
     /// Current phase of the attack
     pub phase: AttackPhase,
     /// Determines the timer length for reacting phase
-    pub attack_delay: f32,
+    pub attack_delay_seconds: f32,
     /// Weapon size multiplier
     pub extend_scale: f32,
     pub position: AttackPosition,
@@ -155,7 +155,7 @@ impl Attack {
     pub fn new(attack_delay: f32, extend_scale: f32) -> Self {
         Self {
             phase: AttackPhase::default(),
-            attack_delay,
+            attack_delay_seconds: attack_delay,
             extend_scale,
             position: AttackPosition::default(),
         }
@@ -165,19 +165,22 @@ impl Attack {
         // that u128 duration cast to f64 should be fine
         // because it should never be bigger than INITIAL_ATTACK_COOLDOWN_MILLISECONDS
         if increase_fury {
-            let decreased_cooldown = self.attack_delay * COOLDOWN_DECREASE_FACTOR;
-            self.attack_delay = decreased_cooldown.max(MINIMUM_ATTACK_COOLDOWN_SECONDS);
+            let decreased_cooldown = self.attack_delay_seconds * COOLDOWN_DECREASE_FACTOR;
+            self.attack_delay_seconds = decreased_cooldown.max(MINIMUM_ATTACK_COOLDOWN_SECONDS);
             self.extend_scale =
                 (self.extend_scale * SCALE_DECREASE_FACTOR).max(MINIMUM_EXTEND_SCALE);
         } else {
-            let increased_cooldown = self.attack_delay * COOLDOWN_INCREASE_FACTOR;
-            self.attack_delay = increased_cooldown.min(INITIAL_ATTACK_COOLDOWN_SECONDS);
+            let increased_cooldown = self.attack_delay_seconds * COOLDOWN_INCREASE_FACTOR;
+            self.attack_delay_seconds = increased_cooldown.min(INITIAL_ATTACK_COOLDOWN_SECONDS);
             self.extend_scale =
                 (self.extend_scale * SCALE_INCREASE_FACTOR).min(INITIAL_EXTEND_SCALE);
         };
     }
 
     pub fn new_reaction_timer(&self) -> AttackPhase {
-        AttackPhase::Reacting(Timer::from_seconds(self.attack_delay, TimerMode::Once))
+        AttackPhase::Reacting(Timer::from_seconds(
+            self.attack_delay_seconds,
+            TimerMode::Once,
+        ))
     }
 }
