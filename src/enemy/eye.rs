@@ -8,7 +8,7 @@ use crate::{
     asset_tracking::LoadResource,
     collision_layers::{enemy_hit_boxes, enemy_hurt_boxes},
     enemy::boss::BossController,
-    health::{hitbox_prefab, hurtbox_prefab},
+    health::{health_bar, hitbox_prefab, hurtbox_prefab},
     player::character::Player,
 };
 
@@ -84,6 +84,7 @@ pub fn the_eye(
                 10.0,
                 Transform::default()
             ),
+            health_bar(Transform::from_xyz(-300., 410., 1.), Vec2::new(600.0, 5.0)),
             (
                 Name::new("Wings"),
                 Sprite {

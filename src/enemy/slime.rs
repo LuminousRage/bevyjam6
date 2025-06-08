@@ -41,13 +41,7 @@ impl FromWorld for SlimeAssets {
     }
 }
 
-pub fn slime(
-    slime_assets: &SlimeAssets,
-    translation: Vec3,
-    is_red: bool,
-    meshes: &mut Assets<Mesh>,
-    materials: &mut Assets<ColorMaterial>,
-) -> impl Bundle {
+pub fn slime(slime_assets: &SlimeAssets, translation: Vec3, is_red: bool) -> impl Bundle {
     let scale = Vec2::splat(0.5);
     (
         Name::new("Slime"),
@@ -94,7 +88,7 @@ pub fn slime(
                 if is_red { 15.0 } else { 8.0 },
                 Transform::default(),
             ),
-            health_bar(Transform::from_xyz(0., 120., 1.), meshes, materials)
+            health_bar(Transform::from_xyz(-40., 120., 1.), Vec2::new(80.0, 5.0))
         ],
     )
 }

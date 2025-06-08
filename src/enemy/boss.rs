@@ -2,7 +2,7 @@ use crate::{
     asset_tracking::LoadResource,
     collision_layers::enemy_hurt_boxes,
     enemy::eye::{EyeAssets, Pupil, the_eye},
-    health::hurtbox_prefab,
+    health::{health_bar, hurtbox_prefab},
     player::character::Player,
 };
 use avian2d::{math::*, prelude::*};

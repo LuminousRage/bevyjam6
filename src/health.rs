@@ -4,7 +4,7 @@ use avian2d::{
     math::AdjustPrecision,
     prelude::{Collider, CollidingEntities, CollisionLayers, Sensor},
 };
-use bevy::prelude::*;
+use bevy::{prelude::*, sprite::Anchor};
 
 use crate::player::{attack::systems::WowTheWeaponHit, weapon::WeaponHitbox};
 
@@ -111,12 +111,7 @@ fn tick_hit_boxes(query: Query<&mut HitBox>, time: Res<Time>) {
 #[derive(Component)]
 pub struct HealthBar;
 
-pub fn health_bar(
-    transform: Transform,
-    meshes: &mut Assets<Mesh>,
-    materials: &mut Assets<ColorMaterial>,
-) -> impl Bundle {
-    let shape = meshes.add(Rectangle::new(80.0, 5.0));
+pub fn health_bar(transform: Transform, size: Vec2) -> impl Bundle {
     let back_colour = Color::srgb(0.4, 0.4, 0.4);
     let front_colour = Color::srgb(1.0, 0., 0.);
 
@@ -127,14 +122,22 @@ pub fn health_bar(
         children![
             (
                 Name::new("Back"),
-                Mesh2d(shape.clone()),
-                MeshMaterial2d(materials.add(back_colour))
+                Sprite {
+                    custom_size: Some(size),
+                    color: back_colour,
+                    anchor: Anchor::CenterLeft,
+                    ..default()
+                }
             ),
             (
                 Name::new("Front"),
-                Mesh2d(shape.clone()),
                 HealthBar,
-                MeshMaterial2d(materials.add(front_colour))
+                Sprite {
+                    custom_size: Some(size),
+                    color: front_colour,
+                    anchor: Anchor::CenterLeft,
+                    ..default()
+                },
             )
         ],
     )

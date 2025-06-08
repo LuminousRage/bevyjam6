@@ -13,6 +13,7 @@ use crate::{
         eye::{EyeAssets, the_eye},
         slime::{SlimeAssets, slime},
     },
+    health::health_bar,
     player::{
         character::{PlayerAssets, PlayerLayoutAssets, player},
         weapon::{WeaponAssets, weapon},
@@ -154,20 +155,8 @@ pub fn spawn_level(
         ],
     ));
 
-    commands.spawn(slime(
-        &slime_assets,
-        Vec3::new(-200.0, 2000.0, 0.0),
-        false,
-        &mut meshes,
-        &mut materials,
-    ));
-    commands.spawn(slime(
-        &slime_assets,
-        Vec3::new(200.0, 2000.0, 0.0),
-        true,
-        &mut meshes,
-        &mut materials,
-    ));
+    commands.spawn(slime(&slime_assets, Vec3::new(-200.0, 2000.0, 0.0), false));
+    commands.spawn(slime(&slime_assets, Vec3::new(200.0, 2000.0, 0.0), true));
     commands.spawn(boss(
         &eye_assets,
         &mut texture_atlas_layouts,
