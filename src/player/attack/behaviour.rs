@@ -8,11 +8,11 @@ pub(super) fn plugin(app: &mut App) {
     app.add_event::<AttackDirection>();
 }
 
-const INITIAL_ATTACK_COOLDOWN_SECONDS: f32 = 2.;
+const INITIAL_ATTACK_COOLDOWN_SECONDS: f32 = 1.5;
 const MINIMUM_ATTACK_COOLDOWN_SECONDS: f32 = 0.05;
 const ATTACK_PERIOD_SECONDS: f32 = 2.;
 const GRACE_PERIOD_SECONDS: f32 = 2.0;
-const INITIAL_EXTEND_SCALE: f32 = 8.0;
+const INITIAL_EXTEND_SCALE: f32 = 7.0;
 const MINIMUM_EXTEND_SCALE: f32 = 1.0;
 
 const SCALE_INCREASE_FACTOR: f32 = 1.2;
