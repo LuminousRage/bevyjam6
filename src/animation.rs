@@ -7,11 +7,17 @@ pub(super) fn plugin(app: &mut App) {
 
 pub fn reversible_animation(reverse: &mut bool, frame: &mut usize, num_frames: usize) {
     if *reverse {
+        if *frame == 0 {
+            *reverse = false;
+        }
         *frame -= 1;
         if *frame == 0 {
             *reverse = false;
         }
     } else {
+        if *frame == num_frames - 1 {
+            *reverse = true;
+        }
         *frame += 1;
         if *frame == num_frames - 1 {
             *reverse = true;
