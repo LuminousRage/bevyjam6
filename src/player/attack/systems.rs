@@ -90,6 +90,7 @@ fn attack_handler(
 fn do_attack(
     mut player: Single<(&mut Attack, Entity), With<Player>>,
     mut do_attack_event: EventReader<DoAttackEvent>,
+    mut play_sound_writer: EventWriter<AttackSound>,
 ) {
     let (attack, entity) = &mut *player;
 
@@ -98,13 +99,16 @@ fn do_attack(
             let collision = true;
 
             attack.position = attack.position.get_next();
+
             // check collision
             if collision {
                 attack.update_fury(true);
                 attack.phase = AttackPhase::new_ready_timer();
+                play_sound_writer.write(AttackSound::Hit(attack.attack_delay_seconds));
             } else {
                 attack.update_fury(false);
-                attack.phase = AttackPhase::new_cooling_timer()
+                attack.phase = AttackPhase::new_cooling_timer();
+                play_sound_writer.write(AttackSound::Miss(attack.attack_delay_seconds));
             }
         }
     }

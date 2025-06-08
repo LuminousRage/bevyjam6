@@ -7,6 +7,7 @@ use avian2d::{
 use bevy::{prelude::*, transform};
 
 pub(super) fn plugin(app: &mut App) {
+    app.register_type::<Health>();
     app.add_event::<DeathEvent>()
         .add_event::<ChangeHpEvent>()
         .add_systems(
@@ -15,7 +16,8 @@ pub(super) fn plugin(app: &mut App) {
         );
 }
 
-#[derive(Component)]
+#[derive(Component, Reflect)]
+#[reflect(Component)]
 pub struct Health {
     current: f32,
     max: f32,
