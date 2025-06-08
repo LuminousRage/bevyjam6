@@ -9,6 +9,7 @@ pub fn reversible_animation(reverse: &mut bool, frame: &mut usize, num_frames: u
     if *reverse {
         if *frame == 0 {
             *reverse = false;
+            return;
         }
         *frame -= 1;
         if *frame == 0 {
