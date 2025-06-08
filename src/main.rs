@@ -66,7 +66,7 @@ impl Plugin for AppPlugin {
             audio::plugin,
             #[cfg(feature = "dev")]
             dev_tools::plugin,
-            // menus::plugin,
+            menus::plugin,
             screens::plugin,
             theme::plugin,
             health::plugin,

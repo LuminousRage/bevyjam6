@@ -2,10 +2,7 @@ use avian2d::{
     math::{AdjustPrecision, Scalar, Vector},
     prelude::*,
 };
-use bevy::{
-    math::ops::{exp, ln},
-    prelude::*,
-};
+use bevy::{math::ops::exp, prelude::*};
 
 use crate::collision_layers::GameLayer;
 
