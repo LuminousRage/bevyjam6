@@ -20,7 +20,10 @@ use crate::{
 pub(super) fn plugin(app: &mut App) {
     app.register_type::<SlimeAssets>();
     app.load_resource::<SlimeAssets>()
-        .add_systems(Update, enemy_decision_making.in_set(PausableSystems))
+        .add_systems(
+            Update,
+            (enemy_decision_making, slime_fall_recovery).in_set(PausableSystems),
+        )
         .add_systems(Last, kill_slimes.in_set(PausableSystems));
 }
 
@@ -183,6 +186,19 @@ fn kill_slimes(
     for DeathEvent(entity) in death_reader.read() {
         if slimes.contains(*entity) {
             commands.entity(*entity).despawn();
+        }
+    }
+}
+
+fn slime_fall_recovery(
+    mut slimes: Query<(&mut Transform, &mut LinearVelocity), With<SlimeController>>,
+) {
+    for mut slime in slimes {
+        if slime.0.translation.y < -1500.0 {
+            slime.1.y = 0.0;
+            // TODO: add a period of invulnerability
+            slime.0.translation.y = 300.0;
+            slime.0.translation.x = 300.0;
         }
     }
 }

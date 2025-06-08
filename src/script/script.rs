@@ -15,6 +15,7 @@ use bevy::{
     time::Time,
 };
 
+use crate::PausableSystems;
 use crate::asset_tracking::LoadResource;
 use crate::enemy::boss::BossController;
 use crate::enemy::configs::POSITION_1;
@@ -32,7 +33,8 @@ pub(super) fn plugin(app: &mut App) {
         Update,
         process_script_events
             .run_if(resource_exists::<EyeAssets>)
-            .run_if(resource_exists::<EyeAssets>),
+            .run_if(resource_exists::<EyeAssets>)
+            .in_set(PausableSystems),
     );
     app.insert_resource(get_game_script());
 }

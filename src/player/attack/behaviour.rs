@@ -60,7 +60,7 @@ impl AttackPosition {
         }
     }
 
-    // todo: this code sucks, maybe fix it later
+    //TODO: this code sucks, maybe fix it later
     pub fn get_translate(&self, attack_direction: Vec2) -> Vec3 {
         if attack_direction.x == 0.0 {
             let translation_offset = if let AttackPosition::Down = self {
