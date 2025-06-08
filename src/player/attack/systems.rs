@@ -97,6 +97,9 @@ fn attack_handler(
             }
         }
         AttackPhase::Cooling(timer) => {
+            commands
+                .entity(fuckin_cooliders.entity())
+                .insert(ColliderDisabled);
             if timer.just_finished() {
                 commands.entity(*entity).remove::<Attack>();
             } else if has_attack_input {
