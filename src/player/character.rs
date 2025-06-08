@@ -2,6 +2,7 @@ use avian2d::{math::Vector, prelude::*};
 use bevy::prelude::*;
 
 use crate::{
+    PausableSystems,
     asset_tracking::LoadResource,
     collision_layers::player_hurt_boxes,
     health::{Health, health_bar, hurtbox_prefab},
@@ -16,8 +17,8 @@ pub(super) fn plugin(app: &mut App) {
     app.register_type::<PlayerLayoutAssets>();
 
     app.load_resource::<PlayerAssets>();
-    app.add_systems(Update, player_fall_recovery);
-    app.add_systems(Update, reset_player_gravity_scale);
+    app.add_systems(Update, player_fall_recovery.in_set(PausableSystems));
+    app.add_systems(Update, reset_player_gravity_scale.in_set(PausableSystems));
     app.add_systems(Startup, init_player_layout);
 }
 

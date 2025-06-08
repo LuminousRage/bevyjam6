@@ -1,10 +1,10 @@
 use bevy::{prelude::*, render::camera::ScalingMode};
 
-use crate::player::character::Player;
+use crate::{PausableSystems, player::character::Player};
 
 pub(super) fn plugin(app: &mut App) {
     app.add_systems(Startup, spawn_camera);
-    app.add_systems(Update, update_camera);
+    app.add_systems(Update, update_camera.in_set(PausableSystems));
 }
 
 /// How quickly should the camera snap to the desired location.

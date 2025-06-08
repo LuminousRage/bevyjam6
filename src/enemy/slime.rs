@@ -5,6 +5,7 @@ use bevy::{
 };
 
 use crate::{
+    PausableSystems,
     asset_tracking::LoadResource,
     collision_layers::{GameLayer, enemy_hit_boxes, enemy_hurt_boxes},
     enemy::configs::*,
@@ -19,8 +20,8 @@ use crate::{
 pub(super) fn plugin(app: &mut App) {
     app.register_type::<SlimeAssets>();
     app.load_resource::<SlimeAssets>()
-        .add_systems(Update, enemy_decision_making)
-        .add_systems(Last, kill_slimes);
+        .add_systems(Update, enemy_decision_making.in_set(PausableSystems))
+        .add_systems(Last, kill_slimes.in_set(PausableSystems));
 }
 
 #[derive(Resource, Asset, Clone, Reflect)]

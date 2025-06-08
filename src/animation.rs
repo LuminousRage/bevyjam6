@@ -1,8 +1,10 @@
 use bevy::prelude::*;
 
+use crate::PausableSystems;
+
 pub(super) fn plugin(app: &mut App) {
     app.init_resource::<Animation>();
-    app.add_systems(Update, tick_animation);
+    app.add_systems(Update, tick_animation.in_set(PausableSystems));
 }
 
 pub fn reversible_animation(reverse: &mut bool, frame: &mut usize, num_frames: usize) {

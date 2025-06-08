@@ -93,7 +93,10 @@ fn run_story(
                     ))
                     .id();
                 let child2 = commands
-                    .spawn(widget::text("Use Arrow keys to move.", &title_assets))
+                    .spawn(widget::text(
+                        "Use Arrow keys to move. And press P to pause.",
+                        &title_assets,
+                    ))
                     .id();
                 commands.entity(entity).add_child(child);
                 commands.entity(entity).add_child(child2);

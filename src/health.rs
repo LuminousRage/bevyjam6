@@ -6,7 +6,10 @@ use avian2d::{
 };
 use bevy::{prelude::*, sprite::Anchor};
 
-use crate::player::{attack::systems::WowTheWeaponHit, weapon::WeaponHitbox};
+use crate::{
+    PausableSystems,
+    player::{attack::systems::WowTheWeaponHit, weapon::WeaponHitbox},
+};
 
 pub(super) fn plugin(app: &mut App) {
     app.register_type::<Health>();
@@ -17,7 +20,8 @@ pub(super) fn plugin(app: &mut App) {
             (
                 ((tick_hit_boxes, tick_hurt_boxes), get_hurt, change_hp).chain(),
                 update_health_bar,
-            ),
+            )
+                .in_set(PausableSystems),
         );
 }
 

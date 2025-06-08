@@ -2,6 +2,7 @@ use avian2d::prelude::{Collider, ColliderDisabled};
 use bevy::prelude::*;
 
 use crate::{
+    PausableSystems,
     physics::creature::Grounded,
     player::{
         attack::{
@@ -32,7 +33,8 @@ pub(super) fn plugin(app: &mut App) {
             )
                 .chain(),
         )
-            .chain(),
+            .chain()
+            .in_set(PausableSystems),
     );
 }
 

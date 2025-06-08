@@ -5,6 +5,7 @@ use avian2d::{
 use bevy::prelude::*;
 
 use crate::{
+    PausableSystems,
     physics::creature::{Flying, Grounded},
     player::{
         character::Player,
@@ -18,7 +19,10 @@ use crate::{
 
 pub(super) fn plugin(app: &mut App) {
     app.add_event::<DashingEvent>();
-    app.add_systems(Update, (handle_dashing, handle_dashing_cooldown));
+    app.add_systems(
+        Update,
+        (handle_dashing, handle_dashing_cooldown).in_set(PausableSystems),
+    );
 }
 
 #[derive(Event)]

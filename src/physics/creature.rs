@@ -4,12 +4,15 @@ use avian2d::{
 };
 use bevy::{math::ops::exp, prelude::*};
 
-use crate::collision_layers::GameLayer;
+use crate::{PausableSystems, collision_layers::GameLayer};
 
 pub(super) fn plugin(app: &mut App) {
-    app.add_systems(Update, (update_grounded, apply_movement_damping))
-        .register_type::<MovementDampingFactor>()
-        .register_type::<MaxSlopeAngle>();
+    app.add_systems(
+        Update,
+        (update_grounded, apply_movement_damping).in_set(PausableSystems),
+    )
+    .register_type::<MovementDampingFactor>()
+    .register_type::<MaxSlopeAngle>();
 }
 
 /// A marker component indicating that an entity is on the ground.

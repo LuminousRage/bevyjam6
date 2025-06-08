@@ -101,8 +101,6 @@ pub fn spawn_level(
     mut materials: ResMut<Assets<ColorMaterial>>,
     level_assets: Res<LevelAssets>,
 ) {
-    commands.spawn(music(level_assets.music.clone()));
-
     commands.spawn((
         Name::new("Background"),
         Transform::from_scale(Vec2::splat(1.3).extend(-5.)),

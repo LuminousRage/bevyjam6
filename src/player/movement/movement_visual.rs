@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 
 use crate::{
+    PausableSystems,
     animation::{Animation, reversible_animation},
     player::{
         character::{Player, PlayerAssets, PlayerLayoutAssets, player_sprite},
@@ -18,7 +19,8 @@ pub(super) fn plugin(app: &mut App) {
         (
             update_player_transform,
             (update_player_image, update_player_sprite_animation).chain(),
-        ),
+        )
+            .in_set(PausableSystems),
     );
 }
 
