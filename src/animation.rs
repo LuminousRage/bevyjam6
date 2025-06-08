@@ -29,14 +29,18 @@ pub fn reversible_animation(reverse: &mut bool, frame: &mut usize, num_frames: u
 }
 
 #[derive(Resource)]
-pub struct Animation(pub Timer);
+pub struct Animation(pub Timer, pub Timer);
 
 impl Default for Animation {
     fn default() -> Self {
-        Self(Timer::from_seconds(0.05, TimerMode::Repeating))
+        Self(
+            Timer::from_seconds(0.05, TimerMode::Repeating),
+            Timer::from_seconds(0.025, TimerMode::Repeating),
+        )
     }
 }
 
 fn tick_animation(time: Res<Time>, mut animation: ResMut<Animation>) {
     animation.0.tick(time.delta());
+    animation.1.tick(time.delta());
 }

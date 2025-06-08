@@ -39,6 +39,8 @@ pub struct PlayerAssets {
     pub player_dash: Handle<Image>,
     #[dependency]
     pub player_jump: Handle<Image>,
+    #[dependency]
+    pub player_step_sound: Handle<AudioSource>,
 }
 
 fn init_player_layout(
@@ -76,6 +78,7 @@ impl FromWorld for PlayerAssets {
             player_run: assets.load("images/player/player_run.png"),
             player_dash: assets.load("images/player/player_dash.png"),
             player_jump: assets.load("images/player/player_jump.png"),
+            player_step_sound: assets.load("audio/sound_effects/button_click.ogg"),
         }
     }
 }
