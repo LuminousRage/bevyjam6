@@ -4,7 +4,11 @@
 
 use bevy::{audio::Volume, input::common_conditions::input_just_pressed, prelude::*, ui::Val::*};
 
-use crate::{menus::Menu, screens::Screen, theme::prelude::*};
+use crate::{
+    menus::Menu,
+    screens::{Screen, title::TitleAssets},
+    theme::prelude::*,
+};
 
 pub(super) fn plugin(app: &mut App) {
     app.add_systems(OnEnter(Menu::Settings), spawn_settings_menu);
@@ -20,20 +24,20 @@ pub(super) fn plugin(app: &mut App) {
     );
 }
 
-fn spawn_settings_menu(mut commands: Commands) {
+fn spawn_settings_menu(mut commands: Commands, title_assets: Res<TitleAssets>) {
     commands.spawn((
         widget::ui_root("Settings Menu"),
         GlobalZIndex(2),
         StateScoped(Menu::Settings),
         children![
             widget::header("Settings"),
-            settings_grid(),
-            widget::button("Back", go_back_on_click),
+            settings_grid(&title_assets),
+            widget::button("Back", go_back_on_click, &title_assets),
         ],
     ));
 }
 
-fn settings_grid() -> impl Bundle {
+fn settings_grid(title_assets: &TitleAssets) -> impl Bundle {
     (
         Name::new("Settings Grid"),
         Node {
@@ -51,12 +55,12 @@ fn settings_grid() -> impl Bundle {
                     ..default()
                 }
             ),
-            global_volume_widget(),
+            global_volume_widget(title_assets),
         ],
     )
 }
 
-fn global_volume_widget() -> impl Bundle {
+fn global_volume_widget(title_assets: &TitleAssets) -> impl Bundle {
     (
         Name::new("Global Volume Widget"),
         Node {
@@ -64,7 +68,7 @@ fn global_volume_widget() -> impl Bundle {
             ..default()
         },
         children![
-            widget::button_small("-", lower_global_volume),
+            widget::button_small("-", lower_global_volume, &title_assets),
             (
                 Name::new("Current Volume"),
                 Node {
@@ -74,7 +78,7 @@ fn global_volume_widget() -> impl Bundle {
                 },
                 children![(widget::label(""), GlobalVolumeLabel)],
             ),
-            widget::button_small("+", raise_global_volume),
+            widget::button_small("+", raise_global_volume, &title_assets),
         ],
     )
 }

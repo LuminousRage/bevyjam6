@@ -22,17 +22,17 @@ fn spawn_main_menu(mut commands: Commands, title_assets: Res<TitleAssets>) {
         #[cfg(not(target_family = "wasm"))]
         children![
             widget::title(GAME_NAME, &title_assets),
-            widget::button("Start", enter_loading_or_gameplay_screen),
-            widget::button("Settings", open_settings_menu),
-            widget::button("Credits", open_credits_menu),
-            widget::button("Exit", exit_app),
+            widget::button("Start", enter_loading_or_gameplay_screen, &title_assets),
+            widget::button("Settings", open_settings_menu, &title_assets),
+            widget::button("Credits", open_credits_menu, &title_assets),
+            widget::button("Exit", exit_app, &title_assets),
         ],
         #[cfg(target_family = "wasm")]
         children![
             widget::title(GAME_NAME, &title_assets),
-            widget::button("Start", enter_loading_or_gameplay_screen),
-            widget::button("Settings", open_settings_menu),
-            widget::button("Credits", open_credits_menu),
+            widget::button("Start", enter_loading_or_gameplay_screen, &title_assets),
+            widget::button("Settings", open_settings_menu, &title_assets),
+            widget::button("Credits", open_credits_menu, &title_assets),
         ],
     ));
 }

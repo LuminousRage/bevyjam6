@@ -4,7 +4,7 @@ use bevy::{
     ecs::spawn::SpawnIter, input::common_conditions::input_just_pressed, prelude::*, ui::Val::*,
 };
 
-use crate::{menus::Menu, theme::prelude::*};
+use crate::{menus::Menu, screens::title::TitleAssets, theme::prelude::*};
 
 pub(super) fn plugin(app: &mut App) {
     app.add_systems(OnEnter(Menu::Credits), spawn_credits_menu);
@@ -14,7 +14,7 @@ pub(super) fn plugin(app: &mut App) {
     );
 }
 
-fn spawn_credits_menu(mut commands: Commands) {
+fn spawn_credits_menu(mut commands: Commands, title_assets: Res<TitleAssets>) {
     commands.spawn((
         widget::ui_root("Credits Menu"),
         GlobalZIndex(2),
@@ -24,7 +24,7 @@ fn spawn_credits_menu(mut commands: Commands) {
             created_by(),
             widget::header("Assets"),
             assets(),
-            widget::button("Back", go_back_on_click),
+            widget::button("Back", go_back_on_click, &title_assets),
         ],
     ));
 }
