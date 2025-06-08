@@ -17,6 +17,7 @@ mod menus;
 mod physics;
 mod player;
 mod screens;
+mod script;
 mod theme;
 
 use avian2d::{PhysicsPlugins, math::*, prelude::*};
@@ -78,6 +79,7 @@ impl Plugin for AppPlugin {
             animation::plugin,
             level::arena::plugin,
         ));
+        app.add_plugins((script::plugin,));
 
         // pysicks
         app.insert_resource(ClearColor(Color::srgb(0., 4. / 256., 73. / 256.)))

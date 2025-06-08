@@ -1,8 +1,9 @@
 pub mod boss;
-mod configs;
+pub mod configs;
 pub mod eye;
 pub mod slime;
 
+// pub configs::;
 use bevy::prelude::*;
 
 pub(super) fn plugin(app: &mut App) {
