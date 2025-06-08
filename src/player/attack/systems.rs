@@ -71,7 +71,7 @@ fn attack_handler(
                 attack.phase = AttackPhase::Attacking {
                     pos: transform.translation,
                     direction: player.attack_direction,
-                    didithit: None,
+                    is_in_attack_delay: false,
                 };
                 sound_event.write(AttackSound::Slash);
                 commands.entity(the_one_i_need).remove::<ColliderDisabled>();
@@ -81,7 +81,7 @@ fn attack_handler(
         AttackPhase::Attacking {
             pos,
             direction,
-            didithit,
+            is_in_attack_delay: didithit,
         } => {}
         AttackPhase::Ready(timer) => {
             commands.entity(the_one_i_need).insert(ColliderDisabled);
@@ -114,23 +114,47 @@ fn do_attack(
     let is_attacking = matches!(attack.phase, AttackPhase::Attacking { .. });
 
     if is_attacking {
-        for _ in do_attack_event.read() {
-            // figure out how to get this
+        for event in do_attack_event.read() {
             let collision = true;
-            let delay_seconds = attack.attack_delay_seconds;
 
-            if collision {
-                play_sound_writer.write(AttackSound::Hit(delay_seconds));
+            if event.in_attack_delay {
+                attack.update_fury(collision);
+                attack.position = attack.position.get_next();
+
+                if collision {
+                    attack.phase = AttackPhase::new_ready_timer();
+                } else {
+                    attack.phase = AttackPhase::new_cooling_timer();
+                }
             } else {
-                play_sound_writer.write(AttackSound::Miss(delay_seconds));
-            }
+                // figure out how to get this
+                let delay_seconds = attack.attack_delay_seconds;
 
-            if let AttackPhase::Attacking { didithit, .. } = &mut attack.phase {
-                *didithit = Some(collision);
+                if collision {
+                    play_sound_writer.write(AttackSound::Hit(delay_seconds));
+                } else {
+                    play_sound_writer.write(AttackSound::Miss(delay_seconds));
+                }
+
+                if let AttackPhase::Attacking {
+                    is_in_attack_delay, ..
+                } = &mut attack.phase
+                {
+                    *is_in_attack_delay = true;
+                }
             }
         }
     }
 }
+
+// fn did_the_weapon_hit(mut hp_change_event: EventReader<ChangeHpEvent>) {
+//     let the_one_i_need = fuckin_cooliders
+//         .iter()
+//         .find(|(name, _, _)| name.contains(WEAPON_HITBOX_NAME))
+//         .unwrap()
+//         .1;
+// }
+
 fn player_attack_direction(
     mut input_event: EventReader<AttackDirection>,
     mut player: Single<(&mut Player, Has<Grounded>)>,
