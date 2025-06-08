@@ -19,6 +19,7 @@ use crate::PausableSystems;
 use crate::asset_tracking::LoadResource;
 use crate::enemy::boss::BossController;
 use crate::enemy::configs::POSITION_1;
+use crate::menus::Menu;
 use crate::screens::Screen;
 use crate::{
     enemy::{
@@ -226,6 +227,7 @@ fn process_script_events(
     mut script_events: ResMut<ScriptEventQueue>,
     slimes: Query<&SlimeController>,
     bosses: Query<&BossController>,
+    mut next_menu: ResMut<NextState<Menu>>,
 ) {
     let mut delta = time.delta_secs().adjust_precision();
     loop {
@@ -267,7 +269,9 @@ fn process_script_events(
                     dbg!(speaker);
                     dbg!(spokage);
                 }
-                ScriptEvent::EndTheGame => todo!(),
+                ScriptEvent::EndTheGame => {
+                    next_menu.set(Menu::Credits);
+                }
             }
             script_events.queue.remove(0); // Don't increment i — we just removed this item
         }
