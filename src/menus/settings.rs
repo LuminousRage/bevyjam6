@@ -30,7 +30,7 @@ fn spawn_settings_menu(mut commands: Commands, title_assets: Res<TitleAssets>) {
         GlobalZIndex(2),
         StateScoped(Menu::Settings),
         children![
-            widget::header("Settings"),
+            widget::title("Settings", &title_assets, 40.),
             settings_grid(&title_assets),
             widget::button("Back", go_back_on_click, &title_assets),
         ],
@@ -49,7 +49,7 @@ fn settings_grid(title_assets: &TitleAssets) -> impl Bundle {
         },
         children![
             (
-                widget::label("Master Volume"),
+                widget::label("Master Volume", &title_assets),
                 Node {
                     justify_self: JustifySelf::End,
                     ..default()
@@ -76,7 +76,7 @@ fn global_volume_widget(title_assets: &TitleAssets) -> impl Bundle {
                     justify_content: JustifyContent::Center,
                     ..default()
                 },
-                children![(widget::label(""), GlobalVolumeLabel)],
+                children![(widget::label("", &title_assets), GlobalVolumeLabel)],
             ),
             widget::button_small("+", raise_global_volume, &title_assets),
         ],

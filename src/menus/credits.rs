@@ -1,8 +1,6 @@
 //! The credits menu.
 
-use bevy::{
-    ecs::spawn::SpawnIter, input::common_conditions::input_just_pressed, prelude::*, ui::Val::*,
-};
+use bevy::{input::common_conditions::input_just_pressed, prelude::*, ui::Val::*};
 
 use crate::{menus::Menu, screens::title::TitleAssets, theme::prelude::*};
 
@@ -19,61 +17,21 @@ fn spawn_credits_menu(mut commands: Commands, title_assets: Res<TitleAssets>) {
         widget::ui_root("Credits Menu"),
         GlobalZIndex(2),
         StateScoped(Menu::Credits),
+        BackgroundColor(Color::BLACK.with_alpha(0.7)),
         children![
-            widget::header("Created by"),
-            created_by(),
-            widget::header("Assets"),
-            assets(),
+            widget::title("Brought to you by", &title_assets, 40.0),
+            widget::label("Tifereth (Programming, all nighter puller), 4321louis (Programming, people skills user)", &title_assets),
+            widget::label("Cassie (Chief Animator, Chief Artist), Varshna (Chief Artist, Chief Background Designer)", &title_assets),
+            widget::label("acid (Story, Ancestor, Vision haver), Hethan (Music, not a Bevy enjoyer)", &title_assets),
+            widget::title("External assets used:", &title_assets, 40.0),
+            widget::label("Fonts: Allura, Crimson", &title_assets),
+            widget::title("We would love your feedback!", &title_assets, 40.0),
+            widget::label("As always, positive feedback goes to giro308 (he didn't even participate in this jam)",&title_assets),
+            widget::label("Negative feedback goes to 4321louis (he did nothing wrong this jam)",&title_assets),
             widget::button("Back", go_back_on_click, &title_assets),
         ],
+
     ));
-}
-
-fn created_by() -> impl Bundle {
-    grid(vec![
-        ["Joe Shmoe", "Implemented alligator wrestling AI"],
-        ["Jane Doe", "Made the music for the alien invasion"],
-    ])
-}
-
-fn assets() -> impl Bundle {
-    grid(vec![
-        ["Ducky sprite", "CC0 by Caz Creates Games"],
-        ["Button SFX", "CC0 by Jaszunio15"],
-        ["Music", "CC BY 3.0 by Kevin MacLeod"],
-        [
-            "Bevy logo",
-            "All rights reserved by the Bevy Foundation, permission granted for splash screen use when unmodified",
-        ],
-    ])
-}
-
-fn grid(content: Vec<[&'static str; 2]>) -> impl Bundle {
-    (
-        Name::new("Grid"),
-        Node {
-            display: Display::Grid,
-            row_gap: Px(10.0),
-            column_gap: Px(30.0),
-            grid_template_columns: RepeatedGridTrack::px(2, 400.0),
-            ..default()
-        },
-        Children::spawn(SpawnIter(content.into_iter().flatten().enumerate().map(
-            |(i, text)| {
-                (
-                    widget::label(text),
-                    Node {
-                        justify_self: if i % 2 == 0 {
-                            JustifySelf::End
-                        } else {
-                            JustifySelf::Start
-                        },
-                        ..default()
-                    },
-                )
-            },
-        ))),
-    )
 }
 
 fn go_back_on_click(_: Trigger<Pointer<Click>>, mut next_menu: ResMut<NextState<Menu>>) {

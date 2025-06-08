@@ -33,13 +33,13 @@ pub fn ui_root(name: impl Into<Cow<'static, str>>) -> impl Bundle {
 }
 
 /// A simple header label. Bigger than [`label`].
-pub fn title(text: impl Into<String>, title_assets: &TitleAssets) -> impl Bundle {
+pub fn title(text: impl Into<String>, title_assets: &TitleAssets, font_size: f32) -> impl Bundle {
     (
         Name::new("Title"),
         Text(text.into()),
         TextFont {
             font: title_assets.allura.clone(),
-            font_size: 120.0,
+            font_size: font_size,
             ..default()
         },
         TextColor(TITLE_TEXT),
@@ -57,11 +57,11 @@ pub fn header(text: impl Into<String>) -> impl Bundle {
 }
 
 /// A simple text label.
-pub fn label(text: impl Into<String>) -> impl Bundle {
+pub fn label(text: impl Into<String>, title_assets: &TitleAssets) -> impl Bundle {
     (
         Name::new("Label"),
         Text(text.into()),
-        TextFont::from_font_size(24.0),
+        TextFont::from_font_size(24.0).with_font(title_assets.crimson.clone()),
         TextColor(LABEL_TEXT),
     )
 }

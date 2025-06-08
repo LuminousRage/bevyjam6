@@ -25,14 +25,14 @@ pub enum Screen {
     Splash,
     Title,
     Loading,
+    Story,
     Gameplay,
 }
 
 impl Default for Screen {
     fn default() -> Self {
         #[cfg(feature = "dev")]
-        return Screen::Splash;
-
+        // return Screen::Splash;
         return Screen::Loading;
 
         #[cfg(not(feature = "dev"))]
