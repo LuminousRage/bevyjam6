@@ -1,4 +1,4 @@
-use avian2d::prelude::Collider;
+use avian2d::prelude::{Collider, ColliderDisabled};
 use bevy::{
     image::{ImageLoaderSettings, ImageSampler},
     math::ops::exp,
@@ -39,7 +39,10 @@ const WEAPON_FOLLOW_OFFSET: Vec3 = Vec3::new(55.0, -35.0, -1.0);
 pub struct Weapon;
 
 #[derive(Component)]
-pub struct WeaponParts;
+pub struct WeaponHitbox;
+
+#[derive(Component)]
+pub struct ItHitSomething;
 
 #[derive(Component)]
 pub struct WeaponGlow;
@@ -148,7 +151,6 @@ pub fn weapon(weapon_assets: &WeaponAssets) -> impl Bundle {
             (
                 Name::new("Weapon Base"),
                 Transform::from_xyz(0.0, 0.0, 0.0),
-                WeaponParts,
                 Sprite {
                     image: weapon_assets.weapon_base.clone(),
                     anchor: Anchor::BottomCenter,
@@ -158,7 +160,6 @@ pub fn weapon(weapon_assets: &WeaponAssets) -> impl Bundle {
             (
                 Name::new("Weapon Extend"),
                 Transform::from_xyz(0.0, OFFSET_FROM_BASE as f32, 0.0),
-                WeaponParts,
                 Sprite {
                     image: weapon_assets.weapon_extend.clone(),
                     anchor: Anchor::BottomCenter,
@@ -168,24 +169,27 @@ pub fn weapon(weapon_assets: &WeaponAssets) -> impl Bundle {
             (
                 Name::new("Weapon Head"),
                 Transform::from_xyz(0.0, (OFFSET_FROM_EXTEND + OFFSET_FROM_BASE) as f32, 0.0),
-                WeaponParts,
                 Sprite {
                     image: weapon_assets.weapon_head.clone(),
                     anchor: Anchor::BottomCenter,
                     ..default()
                 },
                 children![
-                    hitbox_prefab(
-                        Collider::rectangle(100.0, 140.0),
-                        player_hit_boxes(),
-                        0.5,
-                        10.0,
-                        Transform::from_xyz(0.0, 1250.0, 0.0)
+                    (
+                        Name::new("Weapon Hitbox"),
+                        hitbox_prefab(
+                            Collider::rectangle(100.0, 140.0),
+                            player_hit_boxes(),
+                            0.5,
+                            10.0,
+                            Transform::from_xyz(0.0, 1250.0, 0.0)
+                        ),
+                        WeaponHitbox,
+                        ColliderDisabled
                     ),
                     (
                         Name::new("Weapon Glow"),
                         Transform::from_xyz(0.0, 0., 1.0),
-                        WeaponParts,
                         WeaponGlow,
                         Visibility::Hidden,
                         Sprite {
@@ -239,12 +243,12 @@ fn move_weapon_while_idle(
 fn move_weapon_while_attack(
     mut following: Single<&mut Transform, With<Weapon>>,
     weapon_glow: Single<(&mut Sprite, &mut Visibility), With<WeaponGlow>>,
-    player_with_attack: Option<Single<(&Transform, &Player, &mut Attack), Without<Weapon>>>,
+    player_with_attack: Option<Single<(&Transform, &Player, &Attack), Without<Weapon>>>,
     mut do_attack_event: EventWriter<DoAttackEvent>,
     weapon_assets: Res<WeaponAssets>,
     time: Res<Time>,
 ) {
-    let (transform, player, mut attack) = match player_with_attack {
+    let (transform, player, attack) = match player_with_attack {
         Some(p) => p.into_inner(),
         None => {
             // Player not found, must be attackin
@@ -273,21 +277,23 @@ fn move_weapon_while_attack(
         AttackPhase::Attacking {
             pos,
             direction,
-            didithit,
+            is_in_attack_delay,
         } => {
             let target_position = attack.position.get_next().get_translate(direction);
-            if let Some(itactuallyhit) = didithit {
-                if (following.translation - (pos + target_position)).length() < 1.0 {
-                    attack.update_fury(itactuallyhit);
-                    attack.phase = AttackPhase::new_ready_timer();
-                    attack.position = attack.position.get_next();
-                }
+            if (following.translation - (pos + target_position)).length() < 1.0
+                && is_in_attack_delay
+            {
+                do_attack_event.write(DoAttackEvent {
+                    in_attack_delay: true,
+                });
             }
 
             if (following.translation - (pos + target_position)).length() < 100.0
-                && didithit == None
+                && !is_in_attack_delay
             {
-                do_attack_event.write(DoAttackEvent);
+                do_attack_event.write(DoAttackEvent {
+                    in_attack_delay: false,
+                });
             }
 
             let decay_rate = exp(2.7 * (-attack.attack_delay_seconds + 2.7));

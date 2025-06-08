@@ -27,7 +27,9 @@ const WEAPON_ATTACK_VERTICAL_OFFSET: Vec3 = Vec3::new(30.0, 10.0, -1.0);
 pub struct InputAttackEvent;
 
 #[derive(Event)]
-pub struct DoAttackEvent;
+pub struct DoAttackEvent {
+    pub in_attack_delay: bool,
+}
 
 #[derive(Event)]
 pub struct AttackDirection(pub Vec2);
@@ -107,7 +109,7 @@ pub enum AttackPhase {
     Attacking {
         pos: Vec3,
         direction: Vec2,
-        didithit: Option<bool>,
+        is_in_attack_delay: bool,
     },
     /// Weapon is ready to attack, timer is how long until weapon starting cooling down
     Ready(Timer),
@@ -133,7 +135,7 @@ impl AttackPhase {
             AttackPhase::Attacking {
                 pos: _,
                 direction: _,
-                didithit: _,
+                is_in_attack_delay: _,
             } => {}
             AttackPhase::Ready(timer) => {
                 timer.tick(time);

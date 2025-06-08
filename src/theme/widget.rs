@@ -8,7 +8,10 @@ use bevy::{
     ui::Val::*,
 };
 
-use crate::theme::{interaction::InteractionPalette, palette::*};
+use crate::{
+    screens::title::TitleAssets,
+    theme::{interaction::InteractionPalette, palette::*},
+};
 
 /// A root UI node that fills the window and centers its content.
 pub fn ui_root(name: impl Into<Cow<'static, str>>) -> impl Bundle {
@@ -26,6 +29,20 @@ pub fn ui_root(name: impl Into<Cow<'static, str>>) -> impl Bundle {
         },
         // Don't block picking events for other UI roots.
         Pickable::IGNORE,
+    )
+}
+
+/// A simple header label. Bigger than [`label`].
+pub fn title(text: impl Into<String>, title_assets: &TitleAssets) -> impl Bundle {
+    (
+        Name::new("Title"),
+        Text(text.into()),
+        TextFont {
+            font: title_assets.allura.clone(),
+            font_size: 120.0,
+            ..default()
+        },
+        TextColor(TITLE_TEXT),
     )
 }
 
@@ -50,7 +67,11 @@ pub fn label(text: impl Into<String>) -> impl Bundle {
 }
 
 /// A large rounded button with text and an action defined as an [`Observer`].
-pub fn button<E, B, M, I>(text: impl Into<String>, action: I) -> impl Bundle
+pub fn button<E, B, M, I>(
+    text: impl Into<String>,
+    action: I,
+    title_assets: &TitleAssets,
+) -> impl Bundle
 where
     E: Event,
     B: Bundle,
@@ -61,19 +82,24 @@ where
         action,
         (
             Node {
-                width: Px(380.0),
-                height: Px(80.0),
+                width: Px(200.0),
+                height: Px(50.0),
                 align_items: AlignItems::Center,
                 justify_content: JustifyContent::Center,
                 ..default()
             },
             BorderRadius::MAX,
         ),
+        title_assets,
     )
 }
 
 /// A small square button with text and an action defined as an [`Observer`].
-pub fn button_small<E, B, M, I>(text: impl Into<String>, action: I) -> impl Bundle
+pub fn button_small<E, B, M, I>(
+    text: impl Into<String>,
+    action: I,
+    title_assets: &TitleAssets,
+) -> impl Bundle
 where
     E: Event,
     B: Bundle,
@@ -89,6 +115,7 @@ where
             justify_content: JustifyContent::Center,
             ..default()
         },
+        title_assets,
     )
 }
 
@@ -97,6 +124,7 @@ fn button_base<E, B, M, I>(
     text: impl Into<String>,
     action: I,
     button_bundle: impl Bundle,
+    title_assets: &TitleAssets,
 ) -> impl Bundle
 where
     E: Event,
@@ -105,6 +133,7 @@ where
 {
     let text = text.into();
     let action = IntoObserverSystem::into_system(action);
+    let font = title_assets.crimson.clone();
     (
         Name::new("Button"),
         Node::default(),
@@ -122,7 +151,11 @@ where
                     children![(
                         Name::new("Button Text"),
                         Text(text),
-                        TextFont::from_font_size(40.0),
+                        TextFont {
+                            font_size: 30.0,
+                            font: font,
+                            ..default()
+                        },
                         TextColor(BUTTON_TEXT),
                         // Don't bubble picking events from the text up to the button.
                         Pickable::IGNORE,

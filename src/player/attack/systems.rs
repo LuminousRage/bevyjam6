@@ -1,3 +1,4 @@
+use avian2d::prelude::{Collider, ColliderDisabled};
 use bevy::prelude::*;
 
 use crate::{
@@ -9,10 +10,12 @@ use crate::{
         },
         character::Player,
         input::{gamepad_attack_input, keyboard_attack_input},
+        weapon::{ItHitSomething, WeaponHitbox},
     },
 };
 
 pub(super) fn plugin(app: &mut App) {
+    app.add_event::<WowTheWeaponHit>();
     app.add_systems(
         Update,
         (
@@ -24,6 +27,7 @@ pub(super) fn plugin(app: &mut App) {
             (
                 attack_handler,
                 play_attack_sound.run_if(resource_exists::<AttackAssets>),
+                did_the_weapon_hit,
                 do_attack,
             )
                 .chain(),
@@ -32,8 +36,12 @@ pub(super) fn plugin(app: &mut App) {
     );
 }
 
+#[derive(Event)]
+pub struct WowTheWeaponHit;
+
 fn attack_handler(
     mut player: Single<(Option<&mut Attack>, Entity, &Transform, &Player)>,
+    fuckin_cooliders: Single<Entity, (With<Collider>, With<WeaponHitbox>)>,
     mut input_event: EventReader<InputAttackEvent>,
     mut commands: Commands,
     time: Res<Time>,
@@ -61,18 +69,24 @@ fn attack_handler(
                 attack.phase = AttackPhase::Attacking {
                     pos: transform.translation,
                     direction: player.attack_direction,
-                    didithit: None,
+                    is_in_attack_delay: false,
                 };
                 sound_event.write(AttackSound::Slash);
+                commands
+                    .entity(fuckin_cooliders.entity())
+                    .remove::<ColliderDisabled>();
             }
         }
         // Attacking is handled by animation
         AttackPhase::Attacking {
-            pos,
-            direction,
-            didithit,
+            pos: _,
+            direction: _,
+            is_in_attack_delay: _,
         } => {}
         AttackPhase::Ready(timer) => {
+            commands
+                .entity(fuckin_cooliders.entity())
+                .insert(ColliderDisabled);
             if timer.just_finished() {
                 attack.update_fury(false);
                 // if we are in ready phase, we can start cooling down
@@ -93,32 +107,56 @@ fn attack_handler(
 }
 
 fn do_attack(
-    mut player: Single<(&mut Attack, Entity), With<Player>>,
+    player: Single<(&mut Attack, Entity, Has<ItHitSomething>), With<Player>>,
     mut do_attack_event: EventReader<DoAttackEvent>,
     mut play_sound_writer: EventWriter<AttackSound>,
+    mut commands: Commands,
 ) {
-    let (attack, entity) = &mut *player;
+    let (mut attack, entity, it_hit_something) = player.into_inner();
 
     let is_attacking = matches!(attack.phase, AttackPhase::Attacking { .. });
 
     if is_attacking {
-        for _ in do_attack_event.read() {
-            // figure out how to get this
-            let collision = true;
-            let delay_seconds = attack.attack_delay_seconds;
+        for event in do_attack_event.read() {
+            if event.in_attack_delay {
+                attack.update_fury(it_hit_something);
+                attack.position = attack.position.get_next();
 
-            if collision {
-                play_sound_writer.write(AttackSound::Hit(delay_seconds));
+                if it_hit_something {
+                    attack.phase = AttackPhase::new_ready_timer();
+                } else {
+                    attack.phase = AttackPhase::new_cooling_timer();
+                }
+                commands.entity(entity).remove::<ItHitSomething>();
             } else {
-                play_sound_writer.write(AttackSound::Miss(delay_seconds));
-            }
+                let delay_seconds = attack.attack_delay_seconds;
+                if it_hit_something {
+                    play_sound_writer.write(AttackSound::Hit(delay_seconds));
+                } else {
+                    // play_sound_writer.write(AttackSound::Miss(delay_seconds));
+                }
 
-            if let AttackPhase::Attacking { didithit, .. } = &mut attack.phase {
-                *didithit = Some(collision);
+                if let AttackPhase::Attacking {
+                    is_in_attack_delay, ..
+                } = &mut attack.phase
+                {
+                    *is_in_attack_delay = true;
+                }
             }
         }
     }
 }
+
+fn did_the_weapon_hit(
+    mut wow_the_weapon_hit: EventReader<WowTheWeaponHit>,
+    mut commands: Commands,
+    player: Single<Entity, With<Player>>,
+) {
+    for _ in wow_the_weapon_hit.read() {
+        commands.entity(player.entity()).insert(ItHitSomething);
+    }
+}
+
 fn player_attack_direction(
     mut input_event: EventReader<AttackDirection>,
     mut player: Single<(&mut Player, Has<Grounded>)>,
