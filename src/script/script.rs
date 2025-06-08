@@ -19,6 +19,7 @@ use crate::PausableSystems;
 use crate::asset_tracking::LoadResource;
 use crate::enemy::boss::BossController;
 use crate::enemy::configs::POSITION_1;
+use crate::screens::Screen;
 use crate::{
     enemy::{
         boss::boss,
@@ -34,6 +35,7 @@ pub(super) fn plugin(app: &mut App) {
         process_script_events
             .run_if(resource_exists::<EyeAssets>)
             .run_if(resource_exists::<EyeAssets>)
+            .run_if(in_state(Screen::Gameplay))
             .in_set(PausableSystems),
     );
     app.insert_resource(get_game_script());
