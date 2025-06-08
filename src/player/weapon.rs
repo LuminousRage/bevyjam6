@@ -175,11 +175,11 @@ pub fn weapon(player_assets: &WeaponAssets) -> impl Bundle {
                 },
                 children![
                     hitbox_prefab(
-                        Collider::rectangle(80.0, 110.0),
+                        Collider::rectangle(100.0, 140.0),
                         player_hit_boxes(),
                         0.5,
                         10.0,
-                        Transform::from_xyz(0.0, 1120.0, 0.0)
+                        Transform::from_xyz(0.0, 1250.0, 0.0)
                     ),
                     (
                         Name::new("Weapon Glow"),
