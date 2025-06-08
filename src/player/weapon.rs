@@ -1,5 +1,10 @@
 use avian2d::prelude::Collider;
-use bevy::{math::ops::exp, prelude::*, sprite::Anchor};
+use bevy::{
+    image::{ImageLoaderSettings, ImageSampler},
+    math::ops::exp,
+    prelude::*,
+    sprite::Anchor,
+};
 
 use crate::{
     asset_tracking::LoadResource,
@@ -27,7 +32,7 @@ pub(super) fn plugin(app: &mut App) {
 const OFFSET_FROM_BASE: u64 = 900;
 const OFFSET_FROM_EXTEND: u64 = 604 - 551;
 const EXTEND_SIZE: u64 = 604;
-pub const WEAPON_SCALE_FACTOR: f32 = 0.07;
+pub const WEAPON_SCALE_FACTOR: f32 = 0.065;
 const WEAPON_FOLLOW_OFFSET: Vec3 = Vec3::new(55.0, -35.0, -1.0);
 
 const INACTIVE_WEAPON_TRANSPARENCY: f32 = 0.4;
@@ -51,9 +56,24 @@ impl FromWorld for WeaponAssets {
     fn from_world(world: &mut World) -> Self {
         let assets = world.resource::<AssetServer>();
         Self {
-            weapon_base: assets.load("images/weapon_base.png"),
-            weapon_extend: assets.load("images/weapon_extend.png"),
-            weapon_head: assets.load("images/weapon_head.png"),
+            weapon_base: assets.load_with_settings(
+                "images/weapon_base.png",
+                |settings: &mut ImageLoaderSettings| {
+                    settings.sampler = ImageSampler::nearest();
+                },
+            ),
+            weapon_extend: assets.load_with_settings(
+                "images/weapon_extend.png",
+                |settings: &mut ImageLoaderSettings| {
+                    settings.sampler = ImageSampler::nearest();
+                },
+            ),
+            weapon_head: assets.load_with_settings(
+                "images/weapon_head.png",
+                |settings: &mut ImageLoaderSettings| {
+                    settings.sampler = ImageSampler::nearest();
+                },
+            ),
         }
     }
 }
