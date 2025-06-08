@@ -58,6 +58,7 @@ impl Plugin for AppPlugin {
             asset_tracking::plugin,
             PhysicsPlugins::default(),
             physics::plugin,
+            #[cfg(feature = "dev")]
             PhysicsDebugPlugin::default(),
         ));
         // Add other plugins.

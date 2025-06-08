@@ -35,13 +35,16 @@ const EXTEND_SIZE: u64 = 604;
 pub const WEAPON_SCALE_FACTOR: f32 = 0.065;
 const WEAPON_FOLLOW_OFFSET: Vec3 = Vec3::new(55.0, -35.0, -1.0);
 
-const INACTIVE_WEAPON_TRANSPARENCY: f32 = 0.4;
+const INACTIVE_WEAPON_TRANSPARENCY: f32 = 0.7;
 
 #[derive(Component)]
 pub struct Weapon;
 
 #[derive(Component)]
 pub struct WeaponParts;
+
+#[derive(Component)]
+pub struct WeaponGlow;
 
 #[derive(Resource, Asset, Clone, Reflect)]
 #[reflect(Resource)]
@@ -185,6 +188,8 @@ pub fn weapon(player_assets: &WeaponAssets) -> impl Bundle {
                         Name::new("Weapon Glow"),
                         Transform::from_xyz(0.0, 0., 1.0),
                         WeaponParts,
+                        WeaponGlow,
+                        Visibility::Hidden,
                         Sprite {
                             image: player_assets.weapon_glow_purple.clone(),
                             anchor: Anchor::BottomCenter,
