@@ -22,7 +22,7 @@ fn spawn_main_menu(mut commands: Commands, title_assets: Res<TitleAssets>) {
         #[cfg(not(target_family = "wasm"))]
         children![
             widget::title(GAME_NAME, &title_assets, 120.),
-            widget::button("Start", enter_loading_or_gameplay_screen, &title_assets),
+            widget::button("Start", enter_loading_or_story_screen, &title_assets),
             widget::button("Settings", open_settings_menu, &title_assets),
             widget::button("Credits", open_credits_menu, &title_assets),
             widget::button("Exit", exit_app, &title_assets),
@@ -37,13 +37,13 @@ fn spawn_main_menu(mut commands: Commands, title_assets: Res<TitleAssets>) {
     ));
 }
 
-fn enter_loading_or_gameplay_screen(
+fn enter_loading_or_story_screen(
     _: Trigger<Pointer<Click>>,
     resource_handles: Res<ResourceHandles>,
     mut next_screen: ResMut<NextState<Screen>>,
 ) {
     if resource_handles.is_all_done() {
-        next_screen.set(Screen::Gameplay);
+        next_screen.set(Screen::Story);
     } else {
         next_screen.set(Screen::Loading);
     }

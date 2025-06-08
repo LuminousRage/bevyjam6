@@ -1,8 +1,10 @@
 use bevy::prelude::*;
 
+use crate::PausableSystems;
+
 pub(super) fn plugin(app: &mut App) {
     app.init_resource::<Animation>();
-    app.add_systems(Update, tick_animation);
+    app.add_systems(Update, tick_animation.in_set(PausableSystems));
 }
 
 pub fn reversible_animation(reverse: &mut bool, frame: &mut usize, num_frames: usize) {
@@ -27,14 +29,18 @@ pub fn reversible_animation(reverse: &mut bool, frame: &mut usize, num_frames: u
 }
 
 #[derive(Resource)]
-pub struct Animation(pub Timer);
+pub struct Animation(pub Timer, pub Timer);
 
 impl Default for Animation {
     fn default() -> Self {
-        Self(Timer::from_seconds(0.05, TimerMode::Repeating))
+        Self(
+            Timer::from_seconds(0.05, TimerMode::Repeating),
+            Timer::from_seconds(0.025, TimerMode::Repeating),
+        )
     }
 }
 
 fn tick_animation(time: Res<Time>, mut animation: ResMut<Animation>) {
     animation.0.tick(time.delta());
+    animation.1.tick(time.delta());
 }

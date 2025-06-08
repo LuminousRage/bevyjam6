@@ -6,6 +6,7 @@ use avian2d::{math::*, prelude::*};
 use bevy::prelude::*;
 
 use crate::{
+    PausableSystems,
     physics::creature::CreaturePhysicsBundle,
     player::{
         character::Player,
@@ -33,7 +34,8 @@ pub(super) fn plugin(app: &mut App) {
             movement,
             (handle_jump_event, handle_dash_event),
         )
-            .chain(),),
+            .chain()
+            .in_set(PausableSystems),),
     );
 
     app.register_type::<PlayerMovementState>();

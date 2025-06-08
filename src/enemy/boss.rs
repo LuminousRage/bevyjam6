@@ -1,4 +1,5 @@
 use crate::{
+    PausableSystems,
     asset_tracking::LoadResource,
     collision_layers::enemy_hurt_boxes,
     enemy::eye::{EyeAssets, Pupil, the_eye},
@@ -27,7 +28,10 @@ use crate::{
 pub(super) fn plugin(app: &mut App) {
     app.register_type::<LazerAssets>();
     app.load_resource::<LazerAssets>();
-    app.add_systems(Update, (enemy_decision_making, tick_lazers));
+    app.add_systems(
+        Update,
+        (enemy_decision_making, tick_lazers).in_set(PausableSystems),
+    );
 }
 
 pub fn boss(

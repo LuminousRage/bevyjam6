@@ -7,6 +7,7 @@ use bevy::{
 
 use crate::{
     asset_tracking::LoadResource,
+    audio::music,
     collision_layers::GameLayer,
     enemy::{
         boss::boss,
@@ -41,6 +42,8 @@ pub struct LevelAssets {
     pub platform_medium: Handle<Image>,
     #[dependency]
     pub platform_short: Handle<Image>,
+    #[dependency]
+    pub music: Handle<AudioSource>,
 }
 
 impl FromWorld for LevelAssets {
@@ -84,6 +87,7 @@ impl FromWorld for LevelAssets {
                     settings.sampler = ImageSampler::nearest();
                 },
             ),
+            music: assets.load("audio/music/boss.ogg"),
         }
     }
 }

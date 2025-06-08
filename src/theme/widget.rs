@@ -66,6 +66,15 @@ pub fn label(text: impl Into<String>, title_assets: &TitleAssets) -> impl Bundle
     )
 }
 
+pub fn text(text: impl Into<String>, title_assets: &TitleAssets) -> impl Bundle {
+    (
+        Name::new("Label"),
+        Text(text.into()),
+        TextFont::from_font_size(24.0).with_font(title_assets.crimson.clone()),
+        TextColor(Color::WHITE),
+    )
+}
+
 /// A large rounded button with text and an action defined as an [`Observer`].
 pub fn button<E, B, M, I>(
     text: impl Into<String>,

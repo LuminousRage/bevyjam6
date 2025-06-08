@@ -2,6 +2,7 @@ use avian2d::prelude::{GravityScale, LinearVelocity};
 use bevy::prelude::*;
 
 use crate::{
+    PausableSystems,
     physics::creature::Grounded,
     player::{
         character::Player,
@@ -14,7 +15,7 @@ use crate::{
 
 pub(super) fn plugin(app: &mut App) {
     app.add_event::<JumpingEvent>();
-    app.add_systems(Update, handle_jump_timer);
+    app.add_systems(Update, handle_jump_timer.in_set(PausableSystems));
 }
 
 #[derive(Event)]

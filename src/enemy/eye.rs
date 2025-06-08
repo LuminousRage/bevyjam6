@@ -4,6 +4,7 @@ use avian2d::prelude::Collider;
 use bevy::prelude::*;
 
 use crate::{
+    PausableSystems,
     animation::reversible_animation,
     asset_tracking::LoadResource,
     collision_layers::{enemy_hit_boxes, enemy_hurt_boxes},
@@ -21,7 +22,8 @@ pub(super) fn plugin(app: &mut App) {
             animation_updater,
             update_eye_animation.run_if(resource_exists::<EyeAssets>),
         )
-            .chain(),
+            .chain()
+            .in_set(PausableSystems),
     );
 }
 

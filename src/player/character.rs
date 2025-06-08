@@ -2,6 +2,7 @@ use avian2d::{math::Vector, prelude::*};
 use bevy::prelude::*;
 
 use crate::{
+    PausableSystems,
     asset_tracking::LoadResource,
     collision_layers::player_hurt_boxes,
     health::{Health, health_bar, hurtbox_prefab},
@@ -16,8 +17,8 @@ pub(super) fn plugin(app: &mut App) {
     app.register_type::<PlayerLayoutAssets>();
 
     app.load_resource::<PlayerAssets>();
-    app.add_systems(Update, player_fall_recovery);
-    app.add_systems(Update, reset_player_gravity_scale);
+    app.add_systems(Update, player_fall_recovery.in_set(PausableSystems));
+    app.add_systems(Update, reset_player_gravity_scale.in_set(PausableSystems));
     app.add_systems(Startup, init_player_layout);
 }
 
@@ -38,6 +39,8 @@ pub struct PlayerAssets {
     pub player_dash: Handle<Image>,
     #[dependency]
     pub player_jump: Handle<Image>,
+    #[dependency]
+    pub player_step_sound: Handle<AudioSource>,
 }
 
 fn init_player_layout(
@@ -75,6 +78,7 @@ impl FromWorld for PlayerAssets {
             player_run: assets.load("images/player/player_run.png"),
             player_dash: assets.load("images/player/player_dash.png"),
             player_jump: assets.load("images/player/player_jump.png"),
+            player_step_sound: assets.load("audio/sound_effects/button_click.ogg"),
         }
     }
 }

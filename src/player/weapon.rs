@@ -7,6 +7,7 @@ use bevy::{
 };
 
 use crate::{
+    PausableSystems,
     asset_tracking::LoadResource,
     collision_layers::player_hit_boxes,
     health::hitbox_prefab,
@@ -24,7 +25,8 @@ pub(super) fn plugin(app: &mut App) {
             move_weapon_while_idle,
             move_weapon_while_attack,
             update_weapon_length,
-        ),
+        )
+            .in_set(PausableSystems),
     );
 }
 

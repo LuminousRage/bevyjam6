@@ -1,7 +1,9 @@
 use bevy::prelude::*;
 
 use crate::{
+    PausableSystems,
     animation::{Animation, reversible_animation},
+    audio::sound_effect,
     player::{
         character::{Player, PlayerAssets, PlayerLayoutAssets, player_sprite},
         movement::movement::PlayerMovementState,
@@ -18,7 +20,8 @@ pub(super) fn plugin(app: &mut App) {
         (
             update_player_transform,
             (update_player_image, update_player_sprite_animation).chain(),
-        ),
+        )
+            .in_set(PausableSystems),
     );
 }
 
@@ -47,6 +50,8 @@ fn update_player_image(
 fn update_player_sprite_animation(
     mut player: Single<(&mut Sprite, &mut PlayerMovementState), With<Player>>,
     animation: Res<Animation>,
+    player_assets: Res<PlayerAssets>,
+    mut commands: Commands,
 ) {
     let (sprite, player_mode) = &mut *player;
 
@@ -54,16 +59,30 @@ fn update_player_sprite_animation(
         return;
     };
 
-    if !animation.0.just_finished() {
+    let faster_timer = animation.1.just_finished();
+    let slower_timer = animation.0.just_finished();
+
+    if !faster_timer && !slower_timer {
         return;
     }
 
     match &mut **player_mode {
         PlayerMovementState::Idle(reverse) => {
+            if !slower_timer {
+                return;
+            }
             reversible_animation(reverse, &mut texture_atlas.index, IDLE_FRAME_NUM);
         }
-        PlayerMovementState::Run => texture_atlas.index = (texture_atlas.index + 1) % RUN_FRAME_NUM,
+        PlayerMovementState::Run => {
+            texture_atlas.index = (texture_atlas.index + 1) % RUN_FRAME_NUM;
+            if texture_atlas.index == 4 || texture_atlas.index == 19 {
+                commands.spawn(sound_effect(player_assets.player_step_sound.clone()));
+            }
+        }
         PlayerMovementState::Jump(_) => {
+            if !slower_timer {
+                return;
+            }
             texture_atlas.index = (texture_atlas.index + 1) % JUMP_FRAME_NUM
         }
         PlayerMovementState::Dash(_) => {}
