@@ -165,7 +165,7 @@ pub fn spawn_level(
         Name::new("Platform"),
         Sprite {
             image: level_assets.platform_long.clone(),
-            anchor: Anchor::Custom(Vec2::new(0.0, 0.39)),
+            anchor: Anchor::Custom(Vec2::new(0.0, 0.35)),
             custom_size: Some(Vec2::new(1500.0, 500.0)),
             image_mode: SpriteImageMode::Scale(ScalingMode::FitCenter),
             ..default()
@@ -203,7 +203,7 @@ fn platform_small(
         Name::new(name),
         Sprite {
             image: level_assets.platform_short.clone(),
-            anchor: Anchor::Custom(Vec2::new(0.0, 0.60)),
+            anchor: Anchor::Custom(Vec2::new(0.0, 0.50)),
             custom_size: Some(Vec2::new(300.0, 500.0)),
             image_mode: SpriteImageMode::Scale(ScalingMode::FitCenter),
             ..default()
@@ -228,7 +228,7 @@ fn platform_medium(
         Name::new(name),
         Sprite {
             image: level_assets.platform_medium.clone(),
-            anchor: Anchor::Custom(Vec2::new(0.0, 0.61)),
+            anchor: Anchor::Custom(Vec2::new(0.0, 0.51)),
             custom_size: Some(Vec2::new(500.0, 500.0)),
             image_mode: SpriteImageMode::Scale(ScalingMode::FitCenter),
             ..default()

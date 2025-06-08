@@ -125,7 +125,7 @@ pub fn player(
             texture_atlas,
             ..default()
         },
-        PlayerMovementBundle::new(Collider::capsule(15.0, 135.0), Vector::ONE),
+        PlayerMovementBundle::new(Collider::capsule(15.0, 170.0), Vector::ONE),
         Health::new(CHARACTER_HEALTH),
         Friction::ZERO.with_combine_rule(CoefficientCombine::Min),
         Restitution::ZERO.with_combine_rule(CoefficientCombine::Min),
