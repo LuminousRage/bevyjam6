@@ -48,8 +48,16 @@ pub struct WeaponParts;
 pub struct WeaponAssets {
     #[dependency]
     pub weapon_base: Handle<Image>,
+    #[dependency]
     pub weapon_extend: Handle<Image>,
+    #[dependency]
     pub weapon_head: Handle<Image>,
+    #[dependency]
+    pub weapon_glow_blue: Handle<Image>,
+    #[dependency]
+    pub weapon_glow_red: Handle<Image>,
+    #[dependency]
+    pub weapon_glow_purple: Handle<Image>,
 }
 
 impl FromWorld for WeaponAssets {
@@ -70,6 +78,24 @@ impl FromWorld for WeaponAssets {
             ),
             weapon_head: assets.load_with_settings(
                 "images/weapon_head.png",
+                |settings: &mut ImageLoaderSettings| {
+                    settings.sampler = ImageSampler::nearest();
+                },
+            ),
+            weapon_glow_red: assets.load_with_settings(
+                "images/weapon_glow_red.png",
+                |settings: &mut ImageLoaderSettings| {
+                    settings.sampler = ImageSampler::nearest();
+                },
+            ),
+            weapon_glow_purple: assets.load_with_settings(
+                "images/weapon_glow_purple.png",
+                |settings: &mut ImageLoaderSettings| {
+                    settings.sampler = ImageSampler::nearest();
+                },
+            ),
+            weapon_glow_blue: assets.load_with_settings(
+                "images/weapon_glow_blue.png",
                 |settings: &mut ImageLoaderSettings| {
                     settings.sampler = ImageSampler::nearest();
                 },
@@ -147,14 +173,26 @@ pub fn weapon(player_assets: &WeaponAssets) -> impl Bundle {
                     anchor: Anchor::BottomCenter,
                     ..default()
                 },
-                children![hitbox_prefab(
-                    Collider::rectangle(80.0, 110.0),
-                    player_hit_boxes(),
-                    0.5,
-                    10.0,
-                    Transform::from_xyz(0.0, 1120.0, 0.0)
-                )]
-            )
+                children![
+                    hitbox_prefab(
+                        Collider::rectangle(80.0, 110.0),
+                        player_hit_boxes(),
+                        0.5,
+                        10.0,
+                        Transform::from_xyz(0.0, 1120.0, 0.0)
+                    ),
+                    (
+                        Name::new("Weapon Glow"),
+                        Transform::from_xyz(0.0, 0., 1.0),
+                        WeaponParts,
+                        Sprite {
+                            image: player_assets.weapon_glow_purple.clone(),
+                            anchor: Anchor::BottomCenter,
+                            ..default()
+                        }
+                    )
+                ]
+            ),
         ],
     )
 }
