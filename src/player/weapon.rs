@@ -238,7 +238,7 @@ fn move_weapon_while_idle(
 
 fn move_weapon_while_attack(
     mut following: Single<&mut Transform, With<Weapon>>,
-    mut weapon_glow: Single<(&mut Sprite, &mut Visibility), With<WeaponGlow>>,
+    weapon_glow: Single<(&mut Sprite, &mut Visibility), With<WeaponGlow>>,
     player_with_attack: Option<Single<(&Transform, &Player, &Attack), Without<Weapon>>>,
     mut do_attack_event: EventWriter<DoAttackEvent>,
     weapon_assets: Res<WeaponAssets>,
@@ -257,7 +257,7 @@ fn move_weapon_while_attack(
 
     match &attack.phase {
         AttackPhase::Reacting(timer) => {
-            glow_sprite.color = color_with_transparency(timer_to_transparency(timer));
+            glow_sprite.color = color_with_transparency(timer_to_transparency(timer, false));
             glow_sprite.image = weapon_assets.weapon_glow_red.clone();
             *glow_visibility = Visibility::Inherited;
 
@@ -283,7 +283,7 @@ fn move_weapon_while_attack(
                 .smooth_nudge(&(pos + target_position), decay_rate, delta_time);
         }
         AttackPhase::Ready(timer) => {
-            glow_sprite.color = color_with_transparency(timer_to_transparency(timer));
+            glow_sprite.color = color_with_transparency(timer_to_transparency(timer, true));
             glow_sprite.image = weapon_assets.weapon_glow_purple.clone();
 
             *glow_visibility = Visibility::Inherited;
@@ -298,7 +298,7 @@ fn move_weapon_while_attack(
             );
         }
         AttackPhase::Cooling(timer) => {
-            glow_sprite.color = color_with_transparency(timer_to_transparency(timer));
+            glow_sprite.color = color_with_transparency(timer_to_transparency(timer, true));
             glow_sprite.image = weapon_assets.weapon_glow_blue.clone();
 
             *glow_visibility = Visibility::Inherited;
@@ -319,13 +319,17 @@ fn color_with_transparency(alpha: f32) -> Color {
     Color::srgba(1.0, 1.0, 1.0, alpha)
 }
 
-fn timer_to_transparency(timer: &Timer) -> f32 {
+fn timer_to_transparency(timer: &Timer, reverse: bool) -> f32 {
     let grow_percentage = if timer.finished() {
         1.0
     } else {
-        timer.elapsed_secs() / timer.duration().as_secs() as f32
+        (timer.elapsed_secs() / timer.duration().as_secs() as f32).min(1.0)
     };
 
     // we can tweak this with a function or smth
-    grow_percentage
+    if reverse {
+        1. - grow_percentage
+    } else {
+        grow_percentage
+    }
 }

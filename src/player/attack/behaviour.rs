@@ -171,7 +171,7 @@ impl Attack {
                 (self.extend_scale * SCALE_DECREASE_FACTOR).max(MINIMUM_EXTEND_SCALE);
         } else {
             let increased_cooldown = self.attack_delay * COOLDOWN_INCREASE_FACTOR;
-            self.attack_delay = increased_cooldown.max(INITIAL_ATTACK_COOLDOWN_SECONDS);
+            self.attack_delay = increased_cooldown.min(INITIAL_ATTACK_COOLDOWN_SECONDS);
             self.extend_scale =
                 (self.extend_scale * SCALE_INCREASE_FACTOR).min(INITIAL_EXTEND_SCALE);
         };
