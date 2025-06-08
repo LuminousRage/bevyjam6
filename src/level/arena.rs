@@ -32,6 +32,8 @@ pub struct LevelAssets {
     #[dependency]
     pub fog: Handle<Image>,
     #[dependency]
+    pub light: Handle<Image>,
+    #[dependency]
     pub platform_long: Handle<Image>,
     #[dependency]
     pub platform_medium: Handle<Image>,
@@ -74,6 +76,12 @@ impl FromWorld for LevelAssets {
                     settings.sampler = ImageSampler::nearest();
                 },
             ),
+            light: assets.load_with_settings(
+                "images/light.png",
+                |settings: &mut ImageLoaderSettings| {
+                    settings.sampler = ImageSampler::nearest();
+                },
+            ),
         }
     }
 }
@@ -94,7 +102,7 @@ pub fn spawn_level(
         Sprite::from_image(level_assets.background.clone()),
     ));
     commands.spawn((
-        Name::new("Foreground"),
+        Name::new("Foreground Fog"),
         Transform {
             translation: Vec3::new(0., 0., 8.),
             scale: Vec3::new(1.3, 1.0, 1.0),
@@ -103,6 +111,20 @@ pub fn spawn_level(
         Sprite {
             image: level_assets.fog.clone(),
             anchor: Anchor::Custom(vec2(0., 1.)),
+            ..default()
+        },
+    ));
+
+    commands.spawn((
+        Name::new("Foreground Light"),
+        Transform {
+            translation: Vec3::new(180., 400., 8.),
+            scale: Vec3::new(1.3, 1.3, 1.0),
+            ..default()
+        },
+        Sprite {
+            image: level_assets.light.clone(),
+            // anchor: Anchor::Custom(vec2(0., 1.)),
             ..default()
         },
     ));
