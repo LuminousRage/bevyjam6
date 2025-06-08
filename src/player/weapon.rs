@@ -1,4 +1,4 @@
-use avian2d::prelude::Collider;
+use avian2d::prelude::{Collider, ColliderDisabled};
 use bevy::{
     image::{ImageLoaderSettings, ImageSampler},
     math::ops::exp,
@@ -34,6 +34,7 @@ const OFFSET_FROM_EXTEND: u64 = 604 - 551;
 const EXTEND_SIZE: u64 = 604;
 pub const WEAPON_SCALE_FACTOR: f32 = 0.065;
 const WEAPON_FOLLOW_OFFSET: Vec3 = Vec3::new(55.0, -35.0, -1.0);
+pub const WEAPON_HITBOX_NAME: &'static str = "Weapon Hitbox";
 
 #[derive(Component)]
 pub struct Weapon;
@@ -175,12 +176,16 @@ pub fn weapon(weapon_assets: &WeaponAssets) -> impl Bundle {
                     ..default()
                 },
                 children![
-                    hitbox_prefab(
-                        Collider::rectangle(100.0, 140.0),
-                        player_hit_boxes(),
-                        0.5,
-                        10.0,
-                        Transform::from_xyz(0.0, 1250.0, 0.0)
+                    (
+                        Name::new(WEAPON_HITBOX_NAME),
+                        hitbox_prefab(
+                            Collider::rectangle(100.0, 140.0),
+                            player_hit_boxes(),
+                            0.5,
+                            10.0,
+                            Transform::from_xyz(0.0, 1250.0, 0.0)
+                        ),
+                        ColliderDisabled
                     ),
                     (
                         Name::new("Weapon Glow"),
