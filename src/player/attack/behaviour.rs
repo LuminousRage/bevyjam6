@@ -99,11 +99,16 @@ impl AttackPosition {
     }
 }
 
+#[derive(Clone)]
 pub enum AttackPhase {
     /// Weapon is chain reacting, timer is how long from button press to attack
     Reacting(Timer),
     /// Attack animation time, vec holds translation of the character at attack time
-    Attacking { pos: Vec3, direction: Vec2 },
+    Attacking {
+        pos: Vec3,
+        direction: Vec2,
+        didithit: Option<bool>,
+    },
     /// Weapon is ready to attack, timer is how long until weapon starting cooling down
     Ready(Timer),
     /// Weapon is cooling down, attacking during this period will increase the cooldown
@@ -128,6 +133,7 @@ impl AttackPhase {
             AttackPhase::Attacking {
                 pos: _,
                 direction: _,
+                didithit: _,
             } => {}
             AttackPhase::Ready(timer) => {
                 timer.tick(time);

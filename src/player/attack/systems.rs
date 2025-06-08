@@ -61,12 +61,17 @@ fn attack_handler(
                 attack.phase = AttackPhase::Attacking {
                     pos: transform.translation,
                     direction: player.attack_direction,
+                    didithit: None,
                 };
                 sound_event.write(AttackSound::Slash);
             }
         }
         // Attacking is handled by animation
-        AttackPhase::Attacking { pos, direction } => {}
+        AttackPhase::Attacking {
+            pos,
+            direction,
+            didithit,
+        } => {}
         AttackPhase::Ready(timer) => {
             if timer.just_finished() {
                 attack.update_fury(false);
@@ -94,26 +99,26 @@ fn do_attack(
 ) {
     let (attack, entity) = &mut *player;
 
-    if let AttackPhase::Attacking { pos, direction } = attack.phase {
+    let is_attacking = matches!(attack.phase, AttackPhase::Attacking { .. });
+
+    if is_attacking {
         for _ in do_attack_event.read() {
+            // figure out how to get this
             let collision = true;
+            let delay_seconds = attack.attack_delay_seconds;
 
-            attack.position = attack.position.get_next();
-
-            // check collision
             if collision {
-                attack.update_fury(true);
-                attack.phase = AttackPhase::new_ready_timer();
-                play_sound_writer.write(AttackSound::Hit(attack.attack_delay_seconds));
+                play_sound_writer.write(AttackSound::Hit(delay_seconds));
             } else {
-                attack.update_fury(false);
-                attack.phase = AttackPhase::new_cooling_timer();
-                play_sound_writer.write(AttackSound::Miss(attack.attack_delay_seconds));
+                play_sound_writer.write(AttackSound::Miss(delay_seconds));
+            }
+
+            if let AttackPhase::Attacking { didithit, .. } = &mut attack.phase {
+                *didithit = Some(collision);
             }
         }
     }
 }
-
 fn player_attack_direction(
     mut input_event: EventReader<AttackDirection>,
     mut player: Single<(&mut Player, Has<Grounded>)>,
