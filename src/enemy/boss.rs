@@ -6,7 +6,17 @@ use bevy::{
 };
 use rand::Rng;
 
-use crate::{enemy::configs::*, health::Health, player::movement::CharacterController};
+use crate::enemy::configs::*;
+use crate::{
+    asset_tracking::LoadResource,
+    enemy::configs::*,
+    health::Health,
+    physics::{
+        configs::GRAVITY_ACCELERATION,
+        creature::{CreaturePhysicsBundle, Grounded},
+    },
+    player::character::Player,
+};
 
 pub(super) fn plugin(app: &mut App) {
     app.add_systems(Update, enemy_decision_making);

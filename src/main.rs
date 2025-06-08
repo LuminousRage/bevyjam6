@@ -58,6 +58,7 @@ impl Plugin for AppPlugin {
             asset_tracking::plugin,
             PhysicsPlugins::default(),
             physics::plugin,
+            #[cfg(feature = "dev")]
             PhysicsDebugPlugin::default(),
         ));
         // Add other plugins.
@@ -73,10 +74,11 @@ impl Plugin for AppPlugin {
             enemy::plugin,
             camera::plugin,
             animation::plugin,
+            level::arena::plugin,
         ));
 
         // pysicks
-        app.insert_resource(ClearColor(Color::srgb(0.05, 0.05, 0.1)))
+        app.insert_resource(ClearColor(Color::srgb(0., 4. / 256., 73. / 256.)))
             .insert_resource(Gravity(Vector::NEG_Y * GRAVITY_ACCELERATION));
 
         #[cfg(feature = "dev")]

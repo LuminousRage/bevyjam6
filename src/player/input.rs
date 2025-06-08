@@ -4,11 +4,11 @@ use bevy::prelude::*;
 use crate::player::{
     attack::behaviour::{AttackDirection, InputAttackEvent},
     configs::{KEYBOARD_DOWN, KEYBOARD_UP},
+    movement::movement::MovementAction,
 };
 
-use super::{
-    configs::{KEYBOARD_ATTACK, KEYBOARD_DASH, KEYBOARD_JUMP, KEYBOARD_LEFT, KEYBOARD_RIGHT},
-    movement::MovementAction,
+use super::configs::{
+    KEYBOARD_ATTACK, KEYBOARD_DASH, KEYBOARD_JUMP, KEYBOARD_LEFT, KEYBOARD_RIGHT,
 };
 
 fn input_to_direction(left: bool, right: bool, up: bool, down: bool) -> Option<Vec2> {
