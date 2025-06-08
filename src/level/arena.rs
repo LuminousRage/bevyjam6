@@ -93,12 +93,9 @@ pub fn spawn_level(
     player_assets: Res<PlayerAssets>,
     player_layout_assets: Res<PlayerLayoutAssets>,
     weapon_assets: Res<WeaponAssets>,
-    slime_assets: Res<SlimeAssets>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     level_assets: Res<LevelAssets>,
-    mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
-    eye_assets: Res<EyeAssets>,
 ) {
     commands.spawn((
         Name::new("Background"),
@@ -154,15 +151,6 @@ pub fn spawn_level(
             weapon(&weapon_assets)
         ],
     ));
-
-    commands.spawn(slime(&slime_assets, Vec3::new(-200.0, 2000.0, 0.0), false));
-    commands.spawn(slime(&slime_assets, Vec3::new(200.0, 2000.0, 0.0), true));
-    commands.spawn(boss(
-        &eye_assets,
-        &mut texture_atlas_layouts,
-        Vec3::new(-200.0, 100.0, 0.0),
-    ));
-    // commands.spawn(slime());
 
     commands.spawn((
         Name::new("Platform"),
