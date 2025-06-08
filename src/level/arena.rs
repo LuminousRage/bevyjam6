@@ -63,6 +63,12 @@ pub fn spawn_level(
     ));
 
     commands.spawn((
+        Name::new("Background Solid"),
+        Transform::from_scale(Vec2::splat(1.3).extend(-8.)),
+        Sprite::from_color(Color::Srgba(Srgba::new(0., 4., 73., 0.)), Vec2::INFINITY),
+    ));
+
+    commands.spawn((
         Name::new("Level"),
         Transform::default(),
         Visibility::default(),

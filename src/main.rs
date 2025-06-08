@@ -77,7 +77,8 @@ impl Plugin for AppPlugin {
         ));
 
         // pysicks
-        app.insert_resource(Gravity(Vector::NEG_Y * GRAVITY_ACCELERATION));
+        app.insert_resource(ClearColor(Color::srgb(0., 4. / 256., 73. / 256.)))
+            .insert_resource(Gravity(Vector::NEG_Y * GRAVITY_ACCELERATION));
 
         #[cfg(feature = "dev")]
         app.add_plugins((

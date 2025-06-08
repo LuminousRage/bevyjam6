@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, render::camera::ScalingMode};
 
 use crate::player::character::Player;
 
@@ -19,6 +19,13 @@ fn spawn_camera(mut commands: Commands) {
         Name::new("Camera"),
         Camera2d,
         Transform::from_scale(Vec3::new(1.5, 1.5, 1.)),
+        Projection::from(OrthographicProjection {
+            viewport_origin: Vec2::new(0.5, 0.5),
+            scaling_mode: ScalingMode::FixedVertical {
+                viewport_height: 720.,
+            },
+            ..OrthographicProjection::default_2d()
+        }),
     ));
 }
 
