@@ -106,7 +106,7 @@ pub fn spawn_level(
 
     commands.spawn(platform_small(
         "Platform Small",
-        Transform::from_xyz(0., 110., 5.),
+        Transform::from_xyz(0., 100., 5.),
         &level_assets,
     ));
 }

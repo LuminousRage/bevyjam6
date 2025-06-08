@@ -80,14 +80,20 @@ fn movement(
     mut jump_event_writer: EventWriter<JumpingEvent>,
     mut dash_event_writer: EventWriter<DashingEvent>,
     mut sprite_change_event: EventWriter<SpriteImageChange>,
-    mut controllers: Query<(&mut Player, &mut LinearVelocity, &mut PlayerMovementState)>,
+    controller: Single<(&mut Player, &mut LinearVelocity, &mut PlayerMovementState)>,
 ) {
     // Precision is adjusted so that the example works with
     // both the `f32` and `f64` features. Otherwise you don't need this.
     let delta_time = time.delta_secs_f64().adjust_precision();
+    let (mut player, mut linear_velocity, mut player_movement_state) = controller.into_inner();
+
+    if movement_event_reader.is_empty() && *player_movement_state == PlayerMovementState::Run {
+        sprite_change_event.write(SpriteImageChange(PlayerMovementState::Idle(false)));
+        *player_movement_state = PlayerMovementState::Idle(false);
+    }
 
     for event in movement_event_reader.read() {
-        for (mut player, mut linear_velocity, mut player_movement_state) in &mut controllers {
+        {
             match event {
                 MovementAction::Move(direction) => {
                     if let PlayerMovementState::Dash(_) = *player_movement_state {
