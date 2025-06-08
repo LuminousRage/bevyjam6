@@ -32,7 +32,7 @@ impl Health {
 }
 
 #[derive(Event, Debug)]
-pub struct DeathEvent(Entity);
+pub struct DeathEvent(pub Entity);
 
 #[derive(Event, Debug)]
 pub struct ChangeHpEvent {
