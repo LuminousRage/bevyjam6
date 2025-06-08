@@ -144,16 +144,30 @@ pub fn spawn_level(
         Visibility::default(),
         StateScoped(Screen::Gameplay),
         children![
-            player(&player_assets, &player_layout_assets),
+            player(
+                &player_assets,
+                &player_layout_assets,
+                &mut meshes,
+                &mut materials
+            ),
             weapon(&weapon_assets)
         ],
     ));
 
-    let red_slime = || slime(&slime_assets, Vec3::new(200.0, 2000.0, 0.0), true);
-    let black_slime = || slime(&slime_assets, Vec3::new(-200.0, 2000.0, 0.0), false);
-
-    commands.spawn(red_slime());
-    commands.spawn(black_slime());
+    commands.spawn(slime(
+        &slime_assets,
+        Vec3::new(-200.0, 2000.0, 0.0),
+        false,
+        &mut meshes,
+        &mut materials,
+    ));
+    commands.spawn(slime(
+        &slime_assets,
+        Vec3::new(200.0, 2000.0, 0.0),
+        true,
+        &mut meshes,
+        &mut materials,
+    ));
     commands.spawn(boss(
         &eye_assets,
         &mut texture_atlas_layouts,

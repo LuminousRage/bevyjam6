@@ -4,7 +4,7 @@ use bevy::prelude::*;
 use crate::{
     asset_tracking::LoadResource,
     collision_layers::player_hurt_boxes,
-    health::{Health, hurtbox_prefab},
+    health::{Health, health_bar, hurtbox_prefab},
     physics::creature::Grounded,
     player::movement::movement::{PlayerMovementBundle, PlayerMovementState},
 };
@@ -106,6 +106,8 @@ fn player_fall_recovery(
 pub fn player(
     player_assets: &PlayerAssets,
     player_layout_assets: &PlayerLayoutAssets,
+    meshes: &mut Assets<Mesh>,
+    materials: &mut Assets<ColorMaterial>,
 ) -> impl Bundle {
     let movement_state = PlayerMovementState::Idle(false);
     let (image, texture_atlas) =
@@ -131,12 +133,15 @@ pub fn player(
         Restitution::ZERO.with_combine_rule(CoefficientCombine::Min),
         ColliderDensity(2.0),
         GravityScale(CHARACTER_GRAVITY_SCALE),
-        children![hurtbox_prefab(
-            Collider::capsule(30.0, 135.0),
-            player_hurt_boxes(),
-            0.5,
-            Transform::default()
-        )],
+        children![
+            hurtbox_prefab(
+                Collider::capsule(30.0, 135.0),
+                player_hurt_boxes(),
+                0.5,
+                Transform::default()
+            ),
+            // health_bar(Transform::from_xyz(0., 120., 1.), meshes, materials)
+        ],
     )
 }
 

@@ -14,7 +14,10 @@ pub(super) fn plugin(app: &mut App) {
         .add_event::<ChangeHpEvent>()
         .add_systems(
             Update,
-            ((tick_hit_boxes, tick_hurt_boxes), get_hurt, change_hp).chain(),
+            (
+                ((tick_hit_boxes, tick_hurt_boxes), get_hurt, change_hp).chain(),
+                update_health_bar,
+            ),
         );
 }
 
@@ -102,6 +105,53 @@ fn tick_hurt_boxes(query: Query<&mut HurtBox>, time: Res<Time>) {
 fn tick_hit_boxes(query: Query<&mut HitBox>, time: Res<Time>) {
     for mut hb in query {
         hb.remaining_immunity_duration -= time.delta_secs_f64().adjust_precision();
+    }
+}
+
+#[derive(Component)]
+pub struct HealthBar;
+
+pub fn health_bar(
+    transform: Transform,
+    meshes: &mut Assets<Mesh>,
+    materials: &mut Assets<ColorMaterial>,
+) -> impl Bundle {
+    let shape = meshes.add(Rectangle::new(80.0, 5.0));
+    let back_colour = Color::srgb(0.4, 0.4, 0.4);
+    let front_colour = Color::srgb(1.0, 0., 0.);
+
+    (
+        Name::new("Health Bar"),
+        transform,
+        Visibility::default(),
+        children![
+            (
+                Name::new("Back"),
+                Mesh2d(shape.clone()),
+                MeshMaterial2d(materials.add(back_colour))
+            ),
+            (
+                Name::new("Front"),
+                Mesh2d(shape.clone()),
+                HealthBar,
+                MeshMaterial2d(materials.add(front_colour))
+            )
+        ],
+    )
+}
+
+fn update_health_bar(
+    health_havers: Query<&Health>,
+    health_bars: Query<(&ChildOf, &mut Transform), With<HealthBar>>,
+    other_parents: Query<&ChildOf, Without<HealthBar>>,
+) {
+    for (child, mut healthbar_transform) in health_bars {
+        let parent_parent = other_parents.get(child.parent());
+        let parent_health = health_havers.get(parent_parent.unwrap().parent());
+        if let Ok(health) = parent_health {
+            let ratio = health.current / health.max;
+            healthbar_transform.scale.x = ratio;
+        }
     }
 }
 

@@ -8,7 +8,7 @@ use crate::{
     asset_tracking::LoadResource,
     collision_layers::{GameLayer, enemy_hit_boxes, enemy_hurt_boxes},
     enemy::configs::*,
-    health::{DeathEvent, Health, hitbox_prefab, hurtbox_prefab},
+    health::{DeathEvent, Health, health_bar, hitbox_prefab, hurtbox_prefab},
     physics::{
         configs::GRAVITY_ACCELERATION,
         creature::{CreaturePhysicsBundle, Grounded, MovementDampingFactor},
@@ -41,7 +41,13 @@ impl FromWorld for SlimeAssets {
     }
 }
 
-pub fn slime(slime_assets: &SlimeAssets, translation: Vec3, is_red: bool) -> impl Bundle {
+pub fn slime(
+    slime_assets: &SlimeAssets,
+    translation: Vec3,
+    is_red: bool,
+    meshes: &mut Assets<Mesh>,
+    materials: &mut Assets<ColorMaterial>,
+) -> impl Bundle {
     let scale = Vec2::splat(0.5);
     (
         Name::new("Slime"),
@@ -87,7 +93,8 @@ pub fn slime(slime_assets: &SlimeAssets, translation: Vec3, is_red: bool) -> imp
                 0.0,
                 if is_red { 15.0 } else { 8.0 },
                 Transform::default(),
-            )
+            ),
+            health_bar(Transform::from_xyz(0., 120., 1.), meshes, materials)
         ],
     )
 }
