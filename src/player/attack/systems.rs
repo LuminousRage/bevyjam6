@@ -1,8 +1,11 @@
+use std::collections::HashMap;
+
 use avian2d::prelude::{Collider, ColliderDisabled};
 use bevy::prelude::*;
 
 use crate::{
     PausableSystems,
+    health::HitBox,
     physics::creature::Grounded,
     player::{
         attack::{
@@ -43,12 +46,14 @@ pub struct WowTheWeaponHit;
 
 fn attack_handler(
     mut player: Single<(Option<&mut Attack>, Entity, &Transform, &Player)>,
-    fuckin_cooliders: Single<Entity, (With<Collider>, With<WeaponHitbox>)>,
+    fuckin_cooliders: Single<(Entity, &mut HitBox), (With<Collider>, With<WeaponHitbox>)>,
+    // fuckin_cooliders_hb: Single<, (With<Collider>, With<WeaponHitbox>)>,
     mut input_event: EventReader<InputAttackEvent>,
     mut commands: Commands,
     time: Res<Time>,
     mut sound_event: EventWriter<AttackSound>,
 ) {
+    let (fc_entity, mut fc_hb) = fuckin_cooliders.into_inner();
     // Loop so we consume events and don't block. but also we don't really care how many events get triggered
     let has_attack_input = input_event.read().fold(false, |acc, _| acc || true);
 
@@ -74,9 +79,8 @@ fn attack_handler(
                     is_in_attack_delay: false,
                 };
                 sound_event.write(AttackSound::Slash);
-                commands
-                    .entity(fuckin_cooliders.entity())
-                    .remove::<ColliderDisabled>();
+                fc_hb.remaining_rehit_delays = HashMap::new();
+                commands.entity(fc_entity).remove::<ColliderDisabled>();
             }
         }
         // Attacking is handled by animation
@@ -86,9 +90,7 @@ fn attack_handler(
             is_in_attack_delay: _,
         } => {}
         AttackPhase::Ready(timer) => {
-            commands
-                .entity(fuckin_cooliders.entity())
-                .insert(ColliderDisabled);
+            commands.entity(fc_entity).insert(ColliderDisabled);
             if timer.just_finished() {
                 attack.update_fury(false);
                 // if we are in ready phase, we can start cooling down
@@ -99,9 +101,7 @@ fn attack_handler(
             }
         }
         AttackPhase::Cooling(timer) => {
-            commands
-                .entity(fuckin_cooliders.entity())
-                .insert(ColliderDisabled);
+            commands.entity(fc_entity).insert(ColliderDisabled);
             if timer.just_finished() {
                 commands.entity(*entity).remove::<Attack>();
             } else if has_attack_input {

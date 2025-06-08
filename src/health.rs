@@ -50,7 +50,7 @@ pub struct ChangeHpEvent {
 pub fn hurtbox_prefab(
     collider: Collider,
     collision_layer: CollisionLayers,
-    full_rehit_delay: f32,
+    full_immunity_duration: f32,
     transform: Transform,
 ) -> impl Bundle {
     (
@@ -60,8 +60,8 @@ pub fn hurtbox_prefab(
         transform,
         Sensor,
         HurtBox {
-            full_rehit_delay,
-            remaining_rehit_delays: HashMap::default(),
+            full_immunity_duration,
+            remaining_immunity_duration: 0.0,
         },
     )
 }
@@ -69,7 +69,7 @@ pub fn hurtbox_prefab(
 pub fn hitbox_prefab(
     collider: Collider,
     collision_layer: CollisionLayers,
-    full_immunity_duration: f32,
+    full_rehit_delay: f32,
     damage: f32,
     transform: Transform,
 ) -> impl Bundle {
@@ -79,38 +79,38 @@ pub fn hitbox_prefab(
         transform,
         Sensor,
         HitBox {
-            full_immunity_duration,
+            full_rehit_delay,
             damage,
-            remaining_immunity_duration: full_immunity_duration,
+            remaining_rehit_delays: HashMap::default(),
         },
     )
 }
 
-//This component should be ont he child of an entity with a health component
+//This component should be on the child of an entity with a health component
 #[derive(Component)]
 pub struct HurtBox {
-    full_rehit_delay: f32,
-    remaining_rehit_delays: HashMap<Entity, f32>,
+    full_immunity_duration: f32,
+    remaining_immunity_duration: f32,
 }
 
-//This component should be ont he child of an entity with a health component
+//This component should be on the child of an entity with a health component
 #[derive(Component)]
 pub struct HitBox {
-    remaining_immunity_duration: f32,
-    full_immunity_duration: f32,
+    pub remaining_rehit_delays: HashMap<Entity, f32>,
+    full_rehit_delay: f32,
     damage: f32,
 }
 
 fn tick_hurt_boxes(query: Query<&mut HurtBox>, time: Res<Time>) {
     for mut hb in query {
-        for v in hb.remaining_rehit_delays.values_mut() {
-            *v -= time.delta_secs_f64().adjust_precision();
-        }
+        hb.remaining_immunity_duration -= time.delta_secs_f64().adjust_precision();
     }
 }
 fn tick_hit_boxes(query: Query<&mut HitBox>, time: Res<Time>) {
     for mut hb in query {
-        hb.remaining_immunity_duration -= time.delta_secs_f64().adjust_precision();
+        for v in hb.remaining_rehit_delays.values_mut() {
+            *v -= time.delta_secs_f64().adjust_precision();
+        }
     }
 }
 
@@ -172,18 +172,18 @@ fn get_hurt(
     parent_query: Query<&ChildOf>,
 ) {
     for (hurt_entity, hurt_box_colliding_entities, mut hurt_box) in &mut hurt_entities {
-        if *hurt_box
-            .remaining_rehit_delays
-            .get(&hurt_entity)
-            .unwrap_or(&-1.)
-            > 0.0
-        {
+        if hurt_box.remaining_immunity_duration > 0.0 {
             continue;
         }
         for hitbox_ent in hurt_box_colliding_entities.0.iter() {
             match (hitboxes.get_mut(*hitbox_ent), parent_query.get(hurt_entity)) {
                 (Ok((mut hitb, is_weapon_hitbox)), Ok(parent)) => {
-                    if hitb.remaining_immunity_duration <= 0.0 {
+                    if *hitb
+                        .remaining_rehit_delays
+                        .get(&hurt_entity)
+                        .unwrap_or(&-1.)
+                        <= 0.0
+                    {
                         hurt_event_writer.write(ChangeHpEvent {
                             target: parent.parent(),
                             amount: -hitb.damage,
@@ -192,9 +192,9 @@ fn get_hurt(
                         if is_weapon_hitbox {
                             wow_the_weapon_hit.write(WowTheWeaponHit);
                         }
-                        let v = hurt_box.full_rehit_delay;
-                        hurt_box.remaining_rehit_delays.insert(hurt_entity, v);
-                        hitb.remaining_immunity_duration = hitb.full_immunity_duration;
+                        let v = hurt_box.full_immunity_duration;
+                        hitb.remaining_rehit_delays.insert(hurt_entity, v);
+                        hurt_box.remaining_immunity_duration = hurt_box.full_immunity_duration;
                         break;
                     }
                 }
