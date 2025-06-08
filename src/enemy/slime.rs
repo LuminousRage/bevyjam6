@@ -8,7 +8,7 @@ use crate::{
     asset_tracking::LoadResource,
     collision_layers::{GameLayer, enemy_hit_boxes, enemy_hurt_boxes},
     enemy::configs::*,
-    health::{Health, hitbox_prefab, hurtbox_prefab},
+    health::{DeathEvent, Health, hitbox_prefab, hurtbox_prefab},
     physics::{
         configs::GRAVITY_ACCELERATION,
         creature::{CreaturePhysicsBundle, Grounded, MovementDampingFactor},
@@ -19,7 +19,7 @@ use crate::{
 pub(super) fn plugin(app: &mut App) {
     app.register_type::<SlimeAssets>();
     app.load_resource::<SlimeAssets>()
-        .add_systems(Update, enemy_decision_making);
+        .add_systems(Update, (enemy_decision_making, kill_slimes));
 }
 
 #[derive(Resource, Asset, Clone, Reflect)]
@@ -168,6 +168,18 @@ fn enemy_decision_making(
         }
         if is_grounded && slime.jump_attack_cooldown < slime.jump_attack_full_cooldown {
             velocity.x = 0.0;
+        }
+    }
+}
+
+fn kill_slimes(
+    mut commands: Commands,
+    mut death_reader: EventReader<DeathEvent>,
+    mut slimes: Query<(Entity, &mut SlimeController)>,
+) {
+    for DeathEvent(entity) in death_reader.read() {
+        if slimes.contains(*entity) {
+            commands.entity(*entity).despawn();
         }
     }
 }

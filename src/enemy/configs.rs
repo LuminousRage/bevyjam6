@@ -10,11 +10,12 @@ pub const TIME_TO_REPOSITION: f32 = 3.5;
 pub const POSITION_1: Vec2 = Vec2::new(-200., 100.);
 pub const POSITION_2_X: f32 = -POSITION_1.x;
 pub const MAX_REPOSITIONING_Y: f32 = 400.0;
-pub const SKY_LAZER_DURATION: f32 = 1.;
-pub const SKY_LAZER_SPAWN_FREQUENCY: f32 = 0.5;
+pub const SKY_LAZER_DURATION: f32 = 2.;
+pub const SKY_LAZER_SPAWN_FREQUENCY: f32 = 0.3;
 pub const SKY_ATTACK_DURATION: f32 = 5.0;
+pub const SKY_ATTACK_START_TIME: f32 = 0.25;
 pub const BEAM_LAZER_DURATION: f32 = 1.65;
-pub const BEAM_LAZER_WIDTH: f32 = 2.;
+// pub const BEAM_LAZER_WIDTH: f32 = 2.;
 pub const BEAM_ATTACK_DURATION: f32 = BEAM_LAZER_DURATION + 0.35;
 //slime stuff
 pub const RED_HEALTH: f32 = 25.0;

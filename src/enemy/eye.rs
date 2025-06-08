@@ -109,7 +109,8 @@ pub fn the_eye(
             (
                 Name::new("Pupil"),
                 Sprite::from_image(eye_assets.pupil.clone()),
-                EyeAnimation::new()
+                EyeAnimation::new(),
+                Pupil
             ),
             (Name::new("Eye"), Sprite::from_image(eye_assets.eye.clone())),
         ],
@@ -118,6 +119,8 @@ pub fn the_eye(
 
 // The whole code below can do some refactoring
 
+#[derive(Component)]
+pub struct Pupil;
 #[derive(Component)]
 pub struct EyeAnimation {
     timer: Timer,
