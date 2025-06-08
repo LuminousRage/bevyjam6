@@ -120,7 +120,7 @@ pub fn player(
         Sprite {
             image,
             // this should fit on y. x is the variable part
-            custom_size: Some(Vec2::new(300., 225.0)),
+            custom_size: Some(Vec2::new(300., 275.0)),
             image_mode: SpriteImageMode::Scale(ScalingMode::FitCenter),
             texture_atlas,
             ..default()

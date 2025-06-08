@@ -24,9 +24,10 @@ pub(super) fn plugin(app: &mut App) {
 }
 
 // offset in pixels to line up the weapon
-const OFFSET_FROM_BASE: u64 = 898;
-const OFFSET_FROM_EXTEND: u64 = 178;
-const EXTEND_SIZE: u64 = 595;
+const OFFSET_FROM_BASE: u64 = 900;
+const OFFSET_FROM_EXTEND: u64 = 604 - 551;
+const EXTEND_SIZE: u64 = 604;
+pub const WEAPON_SCALE_FACTOR: f32 = 0.07;
 const WEAPON_FOLLOW_OFFSET: Vec3 = Vec3::new(55.0, -35.0, -1.0);
 
 const INACTIVE_WEAPON_TRANSPARENCY: f32 = 0.4;
@@ -92,7 +93,7 @@ pub fn weapon(player_assets: &WeaponAssets) -> impl Bundle {
         Name::new("Weapon"),
         Weapon,
         Transform {
-            scale: Vec2::splat(0.050).extend(1.0),
+            scale: Vec2::splat(WEAPON_SCALE_FACTOR).extend(1.0),
             ..default()
         },
         Visibility::default(),
@@ -199,8 +200,8 @@ fn move_weapon_while_attack(
                 sprite.color = transparency;
             });
             following.rotation = Quat::from_rotation_z(Vec2::Y.angle_to(player.attack_direction));
-            following.scale =
-                attack.position.get_scale(player.attack_direction) * Vec2::splat(0.05).extend(1.0);
+            following.scale = attack.position.get_scale(player.attack_direction)
+                * Vec2::splat(WEAPON_SCALE_FACTOR).extend(1.0);
             following.translation.smooth_nudge(
                 &(transform.translation + attack.position.get_translate(player.attack_direction)),
                 10.0,
@@ -225,8 +226,8 @@ fn move_weapon_while_attack(
                 sprite.color = transparency;
             });
             following.rotation = Quat::from_rotation_z(Vec2::Y.angle_to(player.attack_direction));
-            following.scale =
-                attack.position.get_scale(player.attack_direction) * Vec2::splat(0.05).extend(1.0);
+            following.scale = attack.position.get_scale(player.attack_direction)
+                * Vec2::splat(WEAPON_SCALE_FACTOR).extend(1.0);
             following.translation.smooth_nudge(
                 &(transform.translation + attack.position.get_translate(player.attack_direction)),
                 10.0,
