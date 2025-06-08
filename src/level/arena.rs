@@ -1,5 +1,9 @@
 use avian2d::prelude::*;
-use bevy::{prelude::*, sprite::Anchor};
+use bevy::{
+    image::{ImageLoaderSettings, ImageSampler},
+    prelude::*,
+    sprite::Anchor,
+};
 
 use crate::{
     asset_tracking::LoadResource,
@@ -26,6 +30,8 @@ pub struct LevelAssets {
     #[dependency]
     pub background: Handle<Image>,
     #[dependency]
+    pub fog: Handle<Image>,
+    #[dependency]
     pub platform_long: Handle<Image>,
     #[dependency]
     pub platform_medium: Handle<Image>,
@@ -38,10 +44,36 @@ impl FromWorld for LevelAssets {
         let assets = world.resource::<AssetServer>();
 
         Self {
-            background: assets.load("images/background.png"),
-            platform_long: assets.load("images/platform_long.png"),
-            platform_medium: assets.load("images/platform_medium.png"),
-            platform_short: assets.load("images/platform_short.png"),
+            background: assets.load_with_settings(
+                "images/background.png",
+                |settings: &mut ImageLoaderSettings| {
+                    settings.sampler = ImageSampler::nearest();
+                },
+            ),
+            fog: assets.load_with_settings(
+                "images/fog.png",
+                |settings: &mut ImageLoaderSettings| {
+                    settings.sampler = ImageSampler::nearest();
+                },
+            ),
+            platform_long: assets.load_with_settings(
+                "images/platform_long.png",
+                |settings: &mut ImageLoaderSettings| {
+                    settings.sampler = ImageSampler::nearest();
+                },
+            ),
+            platform_medium: assets.load_with_settings(
+                "images/platform_medium.png",
+                |settings: &mut ImageLoaderSettings| {
+                    settings.sampler = ImageSampler::nearest();
+                },
+            ),
+            platform_short: assets.load_with_settings(
+                "images/platform_short.png",
+                |settings: &mut ImageLoaderSettings| {
+                    settings.sampler = ImageSampler::nearest();
+                },
+            ),
         }
     }
 }
@@ -60,6 +92,19 @@ pub fn spawn_level(
         Name::new("Background"),
         Transform::from_scale(Vec2::splat(1.3).extend(-5.)),
         Sprite::from_image(level_assets.background.clone()),
+    ));
+    commands.spawn((
+        Name::new("Foreground"),
+        Transform {
+            translation: Vec3::new(0., 0., 8.),
+            scale: Vec2::splat(1.3).extend(1.),
+            ..default()
+        },
+        Sprite {
+            image: level_assets.fog.clone(),
+            anchor: Anchor::TopCenter,
+            ..default()
+        },
     ));
 
     commands.spawn((
