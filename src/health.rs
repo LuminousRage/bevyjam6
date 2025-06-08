@@ -4,7 +4,9 @@ use avian2d::{
     math::AdjustPrecision,
     prelude::{Collider, CollidingEntities, CollisionLayers, Sensor},
 };
-use bevy::{prelude::*, transform};
+use bevy::prelude::*;
+
+use crate::player::{attack::systems::WowTheWeaponHit, weapon::WeaponHitbox};
 
 pub(super) fn plugin(app: &mut App) {
     app.register_type::<Health>();
@@ -104,28 +106,35 @@ fn tick_hit_boxes(query: Query<&mut HitBox>, time: Res<Time>) {
 }
 
 fn get_hurt(
-    mut query: Query<(Entity, &CollidingEntities, &mut HurtBox)>,
-    mut hitboxes: Query<&mut HitBox>,
+    mut hurt_entities: Query<(Entity, &CollidingEntities, &mut HurtBox)>,
+    mut hitboxes: Query<(&mut HitBox, Has<WeaponHitbox>)>,
     mut hurt_event_writer: EventWriter<ChangeHpEvent>,
+    mut wow_the_weapon_hit: EventWriter<WowTheWeaponHit>,
     parent_query: Query<&ChildOf>,
 ) {
-    for (entity, colliding_entities, mut hurt_box) in &mut query {
+    for (hurt_entity, hurt_box_colliding_entities, mut hurt_box) in &mut hurt_entities {
         if hurt_box.remaining_rehit_delay > 0.0 {
             continue;
         }
-        for hitbox_ent in colliding_entities.0.iter() {
-            if let Ok(mut hb) = hitboxes.get_mut(*hitbox_ent) {
-                if hb.remaining_immunity_duration <= 0.0 {
-                    if let Ok(parent) = parent_query.get(entity) {
+        for hitbox_ent in hurt_box_colliding_entities.0.iter() {
+            match (hitboxes.get_mut(*hitbox_ent), parent_query.get(hurt_entity)) {
+                (Ok((mut hb, is_weapon_hitbox)), Ok(parent)) => {
+                    if hb.remaining_immunity_duration <= 0.0 {
                         hurt_event_writer.write(ChangeHpEvent {
                             target: parent.parent(),
                             amount: -hb.damage,
                         });
+
+                        if is_weapon_hitbox {
+                            wow_the_weapon_hit.write(WowTheWeaponHit);
+                        }
+
                         hurt_box.remaining_rehit_delay = hurt_box.full_rehit_delay;
                         hb.remaining_immunity_duration = hb.full_immunity_duration;
                         break;
                     }
                 }
+                _ => {}
             }
         }
     }
