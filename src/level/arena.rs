@@ -97,12 +97,12 @@ pub fn spawn_level(
         Name::new("Foreground"),
         Transform {
             translation: Vec3::new(0., 0., 8.),
-            scale: Vec2::splat(1.3).extend(1.),
+            scale: Vec3::new(1.3, 1.0, 1.0),
             ..default()
         },
         Sprite {
             image: level_assets.fog.clone(),
-            anchor: Anchor::TopCenter,
+            anchor: Anchor::Custom(vec2(0., 1.)),
             ..default()
         },
     ));
