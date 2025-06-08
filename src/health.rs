@@ -2,14 +2,11 @@ use std::collections::HashMap;
 
 use avian2d::{
     math::AdjustPrecision,
-    prelude::{
-        Collider, CollidingEntities, CollisionEventsEnabled, CollisionLayers, CollisionStarted,
-        Sensor,
-    },
+    prelude::{Collider, CollidingEntities, CollisionLayers, Sensor},
 };
 use bevy::{prelude::*, sprite::Anchor};
 
-use crate::player::{attack::systems::WowTheWeaponHit, character::Player, weapon::WeaponHitbox};
+use crate::player::{attack::systems::WowTheWeaponHit, weapon::WeaponHitbox};
 
 pub(super) fn plugin(app: &mut App) {
     app.register_type::<Health>();
@@ -58,10 +55,9 @@ pub fn hurtbox_prefab(
         CollidingEntities::default(),
         transform,
         Sensor,
-        CollisionEventsEnabled,
         HurtBox {
             full_rehit_delay,
-            remaining_rehit_delay: full_rehit_delay,
+            remaining_rehit_delays: HashMap::default(),
         },
     )
 }
@@ -78,7 +74,6 @@ pub fn hitbox_prefab(
         collision_layer,
         transform,
         Sensor,
-        CollisionEventsEnabled,
         HitBox {
             full_immunity_duration,
             damage,
@@ -91,7 +86,7 @@ pub fn hitbox_prefab(
 #[derive(Component)]
 pub struct HurtBox {
     full_rehit_delay: f32,
-    remaining_rehit_delay: f32,
+    remaining_rehit_delays: HashMap<Entity, f32>,
 }
 
 //This component should be ont he child of an entity with a health component
@@ -104,7 +99,9 @@ pub struct HitBox {
 
 fn tick_hurt_boxes(query: Query<&mut HurtBox>, time: Res<Time>) {
     for mut hb in query {
-        hb.remaining_rehit_delay -= time.delta_secs_f64().adjust_precision();
+        for v in hb.remaining_rehit_delays.values_mut() {
+            *v -= time.delta_secs_f64().adjust_precision();
+        }
     }
 }
 fn tick_hit_boxes(query: Query<&mut HitBox>, time: Res<Time>) {
@@ -164,47 +161,41 @@ fn update_health_bar(
 }
 
 fn get_hurt(
-    mut hurt_entities: Query<(Entity, &mut HurtBox, Has<Player>)>,
-    mut hitboxes: Query<(Entity, &mut HitBox, Has<WeaponHitbox>)>,
+    mut hurt_entities: Query<(Entity, &CollidingEntities, &mut HurtBox)>,
+    mut hitboxes: Query<(&mut HitBox, Has<WeaponHitbox>)>,
     mut hurt_event_writer: EventWriter<ChangeHpEvent>,
     mut wow_the_weapon_hit: EventWriter<WowTheWeaponHit>,
-    mut collision_event_reader: EventReader<CollisionStarted>,
     parent_query: Query<&ChildOf>,
 ) {
-    for e in collision_event_reader.read() {
-        let hurtbox = hurt_entities.get(e.0).or(hurt_entities.get(e.1));
-        let hitbox = hitboxes.get(e.0).or(hitboxes.get(e.1));
-
-        let (hurtbox, hitbox) = match (hurtbox, hitbox) {
-            (Ok(hurt), Ok(hit)) => (
-                hurt_entities.get_mut(hurt.0).unwrap(),
-                hitboxes.get_mut(hit.0).unwrap(),
-            ),
-            _ => {
-                continue;
-            }
-        };
-        let (entity, hurtbox, has_player) = hurtbox;
-        let (_, mut hitbox, is_weapon_hitbox) = hitbox;
-        if !has_player && !is_weapon_hitbox || has_player && is_weapon_hitbox {
+    for (hurt_entity, hurt_box_colliding_entities, mut hurt_box) in &mut hurt_entities {
+        if *hurt_box
+            .remaining_rehit_delays
+            .get(&hurt_entity)
+            .unwrap_or(&-1.)
+            > 0.0
+        {
             continue;
         }
-        if hurtbox.remaining_rehit_delay > 0.0 {
-            continue;
-        }
-        let hurt_entity = parent_query.get(entity).unwrap();
+        for hitbox_ent in hurt_box_colliding_entities.0.iter() {
+            match (hitboxes.get_mut(*hitbox_ent), parent_query.get(hurt_entity)) {
+                (Ok((mut hitb, is_weapon_hitbox)), Ok(parent)) => {
+                    if hitb.remaining_immunity_duration <= 0.0 {
+                        hurt_event_writer.write(ChangeHpEvent {
+                            target: parent.parent(),
+                            amount: -hitb.damage,
+                        });
 
-        if hitbox.remaining_immunity_duration <= 0.0 {
-            hurt_event_writer.write(ChangeHpEvent {
-                target: hurt_entity.parent(),
-                amount: -hitbox.damage,
-            });
-
-            if is_weapon_hitbox {
-                wow_the_weapon_hit.write(WowTheWeaponHit);
+                        if is_weapon_hitbox {
+                            wow_the_weapon_hit.write(WowTheWeaponHit);
+                        }
+                        let v = hurt_box.full_rehit_delay;
+                        hurt_box.remaining_rehit_delays.insert(hurt_entity, v);
+                        hitb.remaining_immunity_duration = hitb.full_immunity_duration;
+                        break;
+                    }
+                }
+                _ => {}
             }
-
-            hitbox.remaining_immunity_duration = hitbox.full_immunity_duration;
         }
     }
 }
