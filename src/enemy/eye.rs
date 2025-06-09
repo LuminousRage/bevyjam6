@@ -31,17 +31,17 @@ pub(super) fn plugin(app: &mut App) {
 #[reflect(Resource)]
 pub struct EyeAssets {
     #[dependency]
-    eye: Handle<Image>,
+    pub eye: Handle<Image>,
     #[dependency]
-    ring: Handle<Image>,
+    pub ring: Handle<Image>,
     #[dependency]
-    wings: Handle<Image>,
+    pub wings: Handle<Image>,
     #[dependency]
-    red: Handle<Image>,
+    pub red: Handle<Image>,
     #[dependency]
-    white: Handle<Image>,
+    pub white: Handle<Image>,
     #[dependency]
-    pupil: Handle<Image>,
+    pub pupil: Handle<Image>,
 }
 
 impl FromWorld for EyeAssets {
@@ -109,6 +109,8 @@ pub fn the_eye(
             ),
             (
                 Name::new("Eye White"),
+                Transform::from_xyz(0., 0., -0.2),
+                RayWhite,
                 Sprite::from_image(eye_assets.white.clone())
             ),
             (
@@ -126,6 +128,8 @@ pub fn the_eye(
 
 #[derive(Component)]
 pub struct Pupil;
+#[derive(Component)]
+pub struct RayWhite;
 #[derive(Component)]
 pub struct EyeAnimation {
     timer: Timer,

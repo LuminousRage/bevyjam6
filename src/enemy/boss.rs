@@ -2,7 +2,7 @@ use crate::{
     PausableSystems,
     asset_tracking::LoadResource,
     collision_layers::enemy_hurt_boxes,
-    enemy::eye::{EyeAssets, Pupil, the_eye},
+    enemy::eye::{EyeAssets, Pupil, RayWhite, the_eye},
     health::{health_bar, hurtbox_prefab},
     player::character::Player,
 };
@@ -33,6 +33,9 @@ pub(super) fn plugin(app: &mut App) {
         (enemy_decision_making, tick_lazers).in_set(PausableSystems),
     );
 }
+
+const BEAM_LASER_SCALE: Vec3 = Vec3::new(5.0, 1.0, 1.);
+const RAINING_LASER_SCALE: Vec3 = Vec3::ONE;
 
 pub fn boss(
     eye_assets: &EyeAssets,
@@ -71,8 +74,8 @@ pub fn lazer(
     translation: Vec3,
     direction: Vec3,
     time_remaining: f32,
+    scale: Vec3,
 ) -> impl Bundle {
-    let scale = Vec2::splat(1.0);
     let size = Vec2::new(6035.0 / 10., 477.0 / 10.);
     (
         Name::new("Lazer"),
@@ -86,9 +89,10 @@ pub fn lazer(
             .with_translation(translation)
             .with_rotation(Quat::from_rotation_z(
                 direction.angle_between(-Vec3::AXES[0]),
-            )),
+            ))
+            .with_scale(scale),
         children![hurtbox_prefab(
-            Collider::rectangle(0.95 * size.x, 0.8 * size.y),
+            Collider::rectangle(0.95 * size.x * scale.x, 0.2 * size.y),
             enemy_hurt_boxes(),
             0.05,
             Transform::from_translation(Vec3::new(-(5820. / 6035. - 0.5) * 0.95 * size.x, 0., 0.)),
@@ -137,9 +141,11 @@ fn enemy_decision_making(
     mut commands: Commands,
     time: Res<Time>,
     target: Single<&Transform, With<Player>>,
-    pupil: Single<&GlobalTransform, (With<Pupil>, Without<Player>)>,
+    pupil: Single<&GlobalTransform, (With<Pupil>, Without<Player>, Without<RayWhite>)>,
+    mut eye_white: Single<&mut Sprite, (With<RayWhite>, Without<Player>, Without<Pupil>)>,
     boss: Single<(Entity, &mut BossController, &mut Transform), (Without<Pupil>, Without<Player>)>,
     lazer_assets: Res<LazerAssets>,
+    eye_assets: Res<EyeAssets>,
 ) {
     let (entity, mut boss, mut pos) = boss.into_inner();
     let delta_time = time.delta_secs_f64().adjust_precision();
@@ -148,6 +154,8 @@ fn enemy_decision_making(
     boss.time_since_last_reposition_ended += delta_time;
     boss.sky_lazer_remaining_duration -= delta_time;
     boss.beam_lazer_remaining_duration -= delta_time;
+    eye_white.image = eye_assets.white.clone();
+
     if boss.time_since_last_reposition_ended - delta_time < 0. {
         let current_t: f32 = if boss.repositioning_to_left {
             TIME_TO_REPOSITION + boss.time_since_last_reposition_ended.min(0.)
@@ -167,15 +175,18 @@ fn enemy_decision_making(
 
     //sky beamin
     if boss.sky_lazer_remaining_duration > 0. {
+        eye_white.image = eye_assets.red.clone();
+
         //start lazer
         if boss.sky_lazer_remaining_duration + delta_time < SKY_ATTACK_START_TIME
             && boss.sky_lazer_remaining_duration >= SKY_ATTACK_START_TIME
         {
             commands.spawn(lazer(
                 &lazer_assets,
-                pupil.translation(),
+                pupil.translation().with_z(7.),
                 Vec3::new(0.0, 1.0, 0.0),
                 boss.sky_lazer_remaining_duration,
+                RAINING_LASER_SCALE,
             ));
         }
         //spawn lazers
@@ -188,9 +199,10 @@ fn enemy_decision_making(
                 commands.spawn((
                     lazer(
                         &lazer_assets,
-                        Vec3::new(dist.inverse_cdf(roll) as f32, 1200., 0.),
+                        Vec3::new(dist.inverse_cdf(roll) as f32, 1200., 7.),
                         Vec3::new(0.0, -1.0, 0.0),
                         SKY_LAZER_DURATION,
+                        RAINING_LASER_SCALE,
                     ),
                     Collider::capsule(1., 1.),
                     CollisionLayers::new(0b00010, 0b00000),
@@ -228,9 +240,10 @@ fn enemy_decision_making(
         boss.beam_lazer_remaining_duration = BEAM_ATTACK_DURATION;
         commands.spawn(lazer(
             &lazer_assets,
-            pupil.translation(),
+            pupil.translation().with_z(7.),
             target.translation - pupil.translation(),
             BEAM_LAZER_DURATION,
+            BEAM_LASER_SCALE,
         ));
         // commands.spawn(lazer());
         return;

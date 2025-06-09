@@ -247,7 +247,7 @@ fn process_script_events(
                         commands.spawn(boss(
                             &eye_assets,
                             &mut texture_atlas_layouts,
-                            position.extend(0.),
+                            position.extend(0.3),
                         ));
                     }
                     Enemy::BlackSlime => {
