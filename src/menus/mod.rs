@@ -3,6 +3,7 @@
 mod credits;
 mod main;
 mod pause;
+mod results;
 mod settings;
 
 use bevy::prelude::*;
@@ -15,6 +16,7 @@ pub(super) fn plugin(app: &mut App) {
         main::plugin,
         settings::plugin,
         pause::plugin,
+        results::plugin,
     ));
 }
 
@@ -27,4 +29,5 @@ pub enum Menu {
     Credits,
     Settings,
     Pause,
+    Results,
 }

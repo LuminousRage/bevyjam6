@@ -2,7 +2,11 @@
 
 use bevy::{input::common_conditions::input_just_pressed, prelude::*, ui::Val::*};
 
-use crate::{menus::Menu, screens::title::TitleAssets, theme::prelude::*};
+use crate::{
+    menus::Menu,
+    screens::{Screen, title::TitleAssets},
+    theme::prelude::*,
+};
 
 pub(super) fn plugin(app: &mut App) {
     app.add_systems(OnEnter(Menu::Credits), spawn_credits_menu);
@@ -34,10 +38,16 @@ fn spawn_credits_menu(mut commands: Commands, title_assets: Res<TitleAssets>) {
     ));
 }
 
-fn go_back_on_click(_: Trigger<Pointer<Click>>, mut next_menu: ResMut<NextState<Menu>>) {
+fn go_back_on_click(
+    _: Trigger<Pointer<Click>>,
+    mut next_screen: ResMut<NextState<Screen>>,
+    mut next_menu: ResMut<NextState<Menu>>,
+) {
+    next_screen.set(Screen::Title);
     next_menu.set(Menu::Main);
 }
 
-fn go_back(mut next_menu: ResMut<NextState<Menu>>) {
+fn go_back(mut next_screen: ResMut<NextState<Screen>>, mut next_menu: ResMut<NextState<Menu>>) {
+    next_screen.set(Screen::Title);
     next_menu.set(Menu::Main);
 }

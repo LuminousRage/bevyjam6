@@ -64,6 +64,7 @@ pub enum ScriptEvent {
     Spawn(Enemy, Vec2),
     Dialogue(&'static str, &'static str),
     EndTheGame,
+    None,
 }
 
 #[derive(Resource, Default)]
@@ -213,7 +214,9 @@ fn get_game_script() -> ScriptEventQueue {
         ScriptEvent::Dialogue("Ali","Goodbye, Asad. Thanks for showing me the way."),
         ScriptEvent::Dialogue("Asad","Choose wisely. Don't let the chain bind you."),
         ScriptEvent::Wait(3.0),
-        ScriptEvent::EndTheGame
+        ScriptEvent::EndTheGame,
+        // this is for credits screen
+        ScriptEvent::None,
     ]
     .into();
     ScriptEventQueue { queue }
@@ -229,6 +232,7 @@ fn process_script_events(
     slimes: Query<&SlimeController>,
     bosses: Query<&BossController>,
     mut next_menu: ResMut<NextState<Menu>>,
+    mut next_screen: ResMut<NextState<Screen>>,
     dialogue: Single<(&mut Dialogue, &mut Visibility)>,
 ) {
     let mut delta = time.delta_secs().adjust_precision();
@@ -275,7 +279,10 @@ fn process_script_events(
                     break;
                 }
                 ScriptEvent::EndTheGame => {
-                    next_menu.set(Menu::Credits);
+                    next_menu.set(Menu::Results);
+                }
+                ScriptEvent::None => {
+                    return;
                 }
             }
             script_events.queue.remove(0); // Don't increment i — we just removed this item
