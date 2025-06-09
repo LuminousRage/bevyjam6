@@ -4,7 +4,7 @@ use bevy::math::Vec2;
 pub const JUMP_IMPULSE: f32 = 650.0;
 pub const MOVEMENT_DAMPING: f32 = 0.0;
 pub const MAX_SLOPE_ANGLE: f32 = (30.0 as Scalar).to_radians();
-pub const BOSS_HEALTH: f32 = 500.0;
+pub const BOSS_HEALTH: f32 = 2000.0;
 pub const BOSS_TIME_BETWEEN_ATTACKS: f32 = 3.0;
 pub const TIME_TO_REPOSITION: f32 = 3.5;
 pub const POSITION_1: Vec2 = Vec2::new(-200., 100.);

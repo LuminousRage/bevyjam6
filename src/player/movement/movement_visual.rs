@@ -5,6 +5,7 @@ use crate::{
     PausableSystems,
     animation::{Animation, reversible_animation},
     audio::sound_effect,
+    physics::creature::Grounded,
     player::{
         character::{Player, PlayerAssets, PlayerLayoutAssets, player_sprite},
         movement::movement::PlayerMovementState,
@@ -49,12 +50,12 @@ fn update_player_image(
 }
 
 fn update_player_sprite_animation(
-    mut player: Single<(&mut Sprite, &mut PlayerMovementState), With<Player>>,
+    mut player: Single<(&mut Sprite, &mut PlayerMovementState, Has<Grounded>), With<Player>>,
     animation: Res<Animation>,
     player_assets: Res<PlayerAssets>,
     mut commands: Commands,
 ) {
-    let (sprite, player_mode) = &mut *player;
+    let (sprite, player_mode, grounded) = &mut *player;
 
     let Some(texture_atlas) = &mut sprite.texture_atlas else {
         return;
@@ -76,7 +77,7 @@ fn update_player_sprite_animation(
         }
         PlayerMovementState::Run => {
             texture_atlas.index = (texture_atlas.index + 1) % RUN_FRAME_NUM;
-            if texture_atlas.index == 4 || texture_atlas.index == 19 {
+            if texture_atlas.index == 4 || texture_atlas.index == 19 && *grounded {
                 let rng = &mut rand::thread_rng();
                 let chosen = player_assets
                     .player_step_sounds

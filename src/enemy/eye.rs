@@ -74,13 +74,13 @@ pub fn the_eye(
         Transform::from_scale(scale.extend(1.0)).with_translation(translation),
         children![
             hurtbox_prefab(
-                Collider::circle(100.),
+                Collider::circle(280.),
                 enemy_hurt_boxes(),
                 0.0,
                 Transform::default()
             ),
             hitbox_prefab(
-                Collider::circle(100.),
+                Collider::circle(280.),
                 enemy_hit_boxes(),
                 0.0,
                 10.0,

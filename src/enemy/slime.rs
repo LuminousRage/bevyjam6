@@ -1,18 +1,18 @@
 use avian2d::{math::*, prelude::*};
 use bevy::{
-    math::ops::{abs, exp, sqrt},
+    math::ops::{abs, sqrt},
     prelude::*,
 };
 
 use crate::{
     PausableSystems,
     asset_tracking::LoadResource,
-    collision_layers::{GameLayer, enemy_hit_boxes, enemy_hurt_boxes},
-    enemy::configs::*,
+    collision_layers::{enemy_hit_boxes, enemy_hurt_boxes},
+    enemy::{boss::BossController, configs::*},
     health::{DeathEvent, Health, health_bar, hitbox_prefab, hurtbox_prefab},
     physics::{
         configs::GRAVITY_ACCELERATION,
-        creature::{CreaturePhysicsBundle, Grounded, MovementDampingFactor},
+        creature::{CreaturePhysicsBundle, Grounded},
     },
     player::character::Player,
 };
@@ -24,7 +24,7 @@ pub(super) fn plugin(app: &mut App) {
             Update,
             (enemy_decision_making, slime_fall_recovery).in_set(PausableSystems),
         )
-        .add_systems(Last, kill_slimes.in_set(PausableSystems));
+        .add_systems(Last, kill_everything_that_dies.in_set(PausableSystems));
 }
 
 #[derive(Resource, Asset, Clone, Reflect)]
@@ -178,10 +178,10 @@ fn enemy_decision_making(
     }
 }
 
-fn kill_slimes(
+fn kill_everything_that_dies(
     mut commands: Commands,
     mut death_reader: EventReader<DeathEvent>,
-    mut slimes: Query<(Entity, &mut SlimeController)>,
+    slimes: Query<Entity, Or<(With<SlimeController>, With<BossController>)>>,
 ) {
     for DeathEvent(entity) in death_reader.read() {
         if slimes.contains(*entity) {
