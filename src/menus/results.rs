@@ -37,7 +37,7 @@ fn spawn_credits_menu(
             ),
             widget::label(health.current.to_string(), &title_assets),
             widget::title("Thank you for playing!", &title_assets, 40.0),
-            widget::button("Title", go_credit_on_click, &title_assets),
+            widget::button("Credits", go_credit_on_click, &title_assets),
         ],
     ));
 }
