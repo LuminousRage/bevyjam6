@@ -91,6 +91,7 @@ pub fn the_eye(
             health_bar(Transform::from_xyz(-300., 410., 1.), Vec2::new(600.0, 5.0)),
             (
                 Name::new("Wings"),
+                Transform::from_xyz(0., 0., -0.3),
                 Sprite {
                     image: eye_assets.wings.clone(),
 

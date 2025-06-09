@@ -1,6 +1,7 @@
 use crate::{
     PausableSystems,
     asset_tracking::LoadResource,
+    audio::sound_effect,
     collision_layers::enemy_hurt_boxes,
     enemy::eye::{EyeAssets, Pupil, RayWhite, the_eye},
     health::hurtbox_prefab,
@@ -12,7 +13,7 @@ use bevy::{
     prelude::*,
     sprite::Anchor,
 };
-use rand::Rng;
+use rand::{Rng, seq::SliceRandom};
 use statrs::distribution::{ContinuousCDF, Normal};
 
 use crate::enemy::configs::*;
@@ -54,6 +55,10 @@ pub struct LazerAssets {
     img: Handle<Image>,
     #[dependency]
     glint: Handle<Image>,
+    #[dependency]
+    laser_long: Handle<AudioSource>,
+    #[dependency]
+    laser_short: Vec<Handle<AudioSource>>,
 }
 
 impl FromWorld for LazerAssets {
@@ -62,6 +67,11 @@ impl FromWorld for LazerAssets {
         Self {
             img: assets.load("images/LASER_BEAM.png"),
             glint: assets.load("images/GLINT.png"),
+            laser_long: assets.load("audio/sound_effects/player/laser_long.ogg"),
+            laser_short: vec![
+                assets.load("audio/sound_effects/player/laser_short_1.ogg"),
+                assets.load("audio/sound_effects/player/laser_short_2.ogg"),
+            ],
         }
     }
 }
@@ -71,6 +81,7 @@ pub fn lazer(
     direction: Vec3,
     time_remaining: f32,
     scale: Vec3,
+    // this is just saying do we want sky or no sky
     with_glint: bool,
 ) -> impl Bundle {
     let size = Vec2::new(6035.0 / 10., 477.0 / 10.);
@@ -79,6 +90,14 @@ pub fn lazer(
     } else {
         Visibility::Hidden
     };
+    let sound_effect = if with_glint {
+        sound_effect(lazer_assets.laser_long.clone())
+    } else {
+        let rng = &mut rand::thread_rng();
+        let sound = lazer_assets.laser_short.choose(rng).unwrap().clone();
+        sound_effect(sound)
+    };
+
     let glint = (
         Name::new("Glint"),
         Sprite::from_image(lazer_assets.glint.clone()),
@@ -102,12 +121,19 @@ pub fn lazer(
                 direction.angle_between(-Vec3::AXES[0]),
             ))
             .with_scale(scale),
-        children![hurtbox_prefab(
-            Collider::rectangle(0.95 * size.x * scale.x, 0.2 * size.y),
-            enemy_hurt_boxes(),
-            0.05,
-            Transform::from_translation(Vec3::new(-(5820. / 6035. - 0.5) * 0.95 * size.x, 0., 0.)),
-        ),],
+        children![
+            hurtbox_prefab(
+                Collider::rectangle(0.95 * size.x * scale.x, 0.2 * size.y),
+                enemy_hurt_boxes(),
+                0.05,
+                Transform::from_translation(Vec3::new(
+                    -(5820. / 6035. - 0.5) * 0.95 * size.x,
+                    0.,
+                    0.
+                )),
+            ),
+            sound_effect,
+        ],
         Lazer { time_remaining },
     )
 }
