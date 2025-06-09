@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use avian2d::prelude::Collider;
+use avian2d::prelude::{Collider, RigidBody};
 use bevy::prelude::*;
 
 use crate::{
@@ -71,6 +71,8 @@ pub fn the_eye(
 
     (
         Visibility::default(),
+        Collider::circle(280.0),
+        RigidBody::Kinematic,
         Transform::from_scale(scale.extend(1.0)).with_translation(translation),
         children![
             hurtbox_prefab(
