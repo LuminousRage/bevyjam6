@@ -31,8 +31,7 @@ pub(super) fn plugin(app: &mut App) {
                 detect_coyote_time_start,
                 handle_coyote_time,
             ),
-            movement,
-            (handle_jump_event, handle_dash_event),
+            (movement, handle_jump_event, handle_dash_event).chain(),
         )
             .chain()
             .in_set(PausableSystems),),
