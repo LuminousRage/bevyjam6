@@ -3,12 +3,14 @@ use avian2d::{
     prelude::{GravityScale, LinearVelocity},
 };
 use bevy::prelude::*;
+use rand::seq::SliceRandom;
 
 use crate::{
     PausableSystems,
+    audio::sound_effect,
     physics::creature::{Flying, Grounded},
     player::{
-        character::Player,
+        character::{Player, PlayerAssets},
         configs::{
             CHARACTER_GRAVITY_SCALE, DASH_COOLDOWN_DURATION, DASH_DURATION, DASH_SPEED_MODIFIER,
             JUMP_DURATION_SECONDS, MOVEMENT_SPEED,
@@ -52,6 +54,7 @@ pub fn handle_dash_event(
     mut dash_event_reader: EventReader<DashingEvent>,
     mut sprite_change_event: EventWriter<SpriteImageChange>,
     mut commands: Commands,
+    player_assets: Res<PlayerAssets>,
 ) {
     let (
         entity,
@@ -73,6 +76,14 @@ pub fn handle_dash_event(
                     // Can't use dash, do nothing
                     continue;
                 }
+
+                let rng = &mut rand::thread_rng();
+                let chosen = player_assets
+                    .player_dash_sounds
+                    .choose(rng)
+                    .unwrap()
+                    .clone();
+                commands.spawn(sound_effect(chosen));
                 commands.entity(entity).insert(Flying);
                 linear_velocity.x = player.face_direction.x * MOVEMENT_SPEED * DASH_SPEED_MODIFIER;
                 linear_velocity.y = 0.0;

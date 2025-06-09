@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use rand::seq::SliceRandom;
 
 use crate::{
     PausableSystems,
@@ -76,7 +77,13 @@ fn update_player_sprite_animation(
         PlayerMovementState::Run => {
             texture_atlas.index = (texture_atlas.index + 1) % RUN_FRAME_NUM;
             if texture_atlas.index == 4 || texture_atlas.index == 19 {
-                commands.spawn(sound_effect(player_assets.player_step_sound.clone()));
+                let rng = &mut rand::thread_rng();
+                let chosen = player_assets
+                    .player_step_sounds
+                    .choose(rng)
+                    .unwrap()
+                    .clone();
+                commands.spawn(sound_effect(chosen));
             }
         }
         PlayerMovementState::Jump(_) => {

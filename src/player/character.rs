@@ -40,7 +40,9 @@ pub struct PlayerAssets {
     #[dependency]
     pub player_jump: Handle<Image>,
     #[dependency]
-    pub player_step_sound: Handle<AudioSource>,
+    pub player_step_sounds: Vec<Handle<AudioSource>>,
+    #[dependency]
+    pub player_dash_sounds: Vec<Handle<AudioSource>>,
 }
 
 fn init_player_layout(
@@ -78,7 +80,12 @@ impl FromWorld for PlayerAssets {
             player_run: assets.load("images/player/player_run.png"),
             player_dash: assets.load("images/player/player_dash.png"),
             player_jump: assets.load("images/player/player_jump.png"),
-            player_step_sound: assets.load("audio/sound_effects/button_click.ogg"),
+            player_step_sounds: (1..=8)
+                .map(|i| assets.load(&format!("audio/sound_effects/player/footsteps_{}.ogg", i)))
+                .collect(),
+            player_dash_sounds: (1..=8)
+                .map(|i| assets.load(&format!("audio/sound_effects/player/dash_{}.ogg", i)))
+                .collect(),
         }
     }
 }
