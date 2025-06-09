@@ -19,7 +19,8 @@ use crate::{
         character::{PlayerAssets, PlayerLayoutAssets, player},
         weapon::{WeaponAssets, weapon},
     },
-    screens::Screen,
+    screens::{Screen, title::TitleAssets},
+    script::script::dialogue,
 };
 
 pub fn plugin(app: &mut App) {
@@ -44,6 +45,8 @@ pub struct LevelAssets {
     pub platform_short: Handle<Image>,
     #[dependency]
     pub music: Handle<AudioSource>,
+    #[dependency]
+    pub dialogue: Handle<Image>,
 }
 
 impl FromWorld for LevelAssets {
@@ -88,6 +91,7 @@ impl FromWorld for LevelAssets {
                 },
             ),
             music: assets.load("audio/music/boss.ogg"),
+            dialogue: assets.load("images/ui/dialogue_box.png"),
         }
     }
 }
@@ -97,6 +101,7 @@ pub fn spawn_level(
     player_assets: Res<PlayerAssets>,
     player_layout_assets: Res<PlayerLayoutAssets>,
     weapon_assets: Res<WeaponAssets>,
+    title_assets: Res<TitleAssets>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     level_assets: Res<LevelAssets>,
@@ -106,6 +111,8 @@ pub fn spawn_level(
         Transform::from_scale(Vec2::splat(1.3).extend(-5.)),
         Sprite::from_image(level_assets.background.clone()),
     ));
+
+    commands.spawn(dialogue(&level_assets, &title_assets));
     commands.spawn((
         Name::new("Foreground Fog"),
         Transform {

@@ -13,14 +13,17 @@ use bevy::{
     image::TextureAtlasLayout,
     math::Vec2,
     time::Time,
+    ui::Val::*,
 };
 
 use crate::PausableSystems;
 use crate::asset_tracking::LoadResource;
 use crate::enemy::boss::BossController;
 use crate::enemy::configs::POSITION_1;
+use crate::level::arena::LevelAssets;
 use crate::menus::Menu;
 use crate::screens::Screen;
+use crate::screens::title::TitleAssets;
 use crate::{
     enemy::{
         boss::boss,
@@ -38,6 +41,12 @@ pub(super) fn plugin(app: &mut App) {
             .run_if(resource_exists::<EyeAssets>)
             .run_if(in_state(Screen::Gameplay))
             .in_set(PausableSystems),
+    );
+    app.add_systems(
+        Update,
+        (progress_dialogue, update_dialogue_text)
+            .chain()
+            .run_if(in_state(Screen::Gameplay)),
     );
     app.insert_resource(get_game_script());
 }
@@ -75,8 +84,6 @@ fn get_game_script() -> ScriptEventQueue {
     let boss_spawn = POSITION_1;
     let queue = vec![
         ScriptEvent::WaitForSlimesDead,
-        ScriptEvent::Wait(1.0),
-        ScriptEvent::WaitForSlimesDead,
         ScriptEvent::Wait(3.0),
         ScriptEvent::Dialogue("Narrator","[As Ali regains consciousness, a voice echoes in his mind, sharp and demanding.]"),
         ScriptEvent::Dialogue("Mysterious Voice","I've been waiting so long for this. Get up already."),
@@ -92,16 +99,10 @@ fn get_game_script() -> ScriptEventQueue {
         ScriptEvent::Dialogue("Mysterious Voice","There's no time for explanations! I'll explain soon enough just pick up the axe. Now!"),
         ScriptEvent::Dialogue("Narrator","[Ali hesitates, his mind racing with uncertainty. But then his gaze locks onto the large axe resting on the ground. A strange pull tugs at him, almost like an unspoken invitation. Without fully thinking, he crouches and reaches for it. The moment his fingers touch the handle, he feels an immediate, unshakable connection as if the axe was always meant to be in his hands.]"),
         ScriptEvent::Dialogue("Mysterious Voice","Well done. Now, you must prepare yourself. It's about to get dangerous. Take this time to get used to the axe it's the only thing that will keep you alive here."),
-        ScriptEvent::Wait(1.0),
-        //TODO:does this wave need to be removed? does it fit with the dialog?
-        ScriptEvent::Spawn(Enemy::BlackSlime,botleft_spawn),
-        ScriptEvent::Spawn(Enemy::BlackSlime,botright_spawn),
-        ScriptEvent::Wait(0.1),
-        ScriptEvent::WaitForSlimesDead,
-        ScriptEvent::Wait(3.0),
         ScriptEvent::Dialogue("Narrator","[A mass of dark, slimy forms materializes in front of Ali, their glistening, gelatinous bodies pulsing with a sickly light. They writhe and twitch, closing in on him with unnatural speed.]"),
         ScriptEvent::Dialogue("Commanding Voice","Let's see how you fare against my creations!"),
         ScriptEvent::Dialogue("Mysterious Voice","Slimes. They're weak, but there will be many more. Use the axe get ready!"),
+        ScriptEvent::Dialogue("Tip","Hold or press X to attack. As your weapon chain reacts from hitting enemies to gain fury (Red), its swiftness increases. Attack again during the reset period to continue the chain reaction, or miss and go into the cooldown phase (blue)."),
         ScriptEvent::Wait(1.0),
         ScriptEvent::Spawn(Enemy::BlackSlime,topleft_spawn),
         ScriptEvent::Spawn(Enemy::BlackSlime,topright_spawn),
@@ -228,6 +229,7 @@ fn process_script_events(
     slimes: Query<&SlimeController>,
     bosses: Query<&BossController>,
     mut next_menu: ResMut<NextState<Menu>>,
+    dialogue: Single<(&mut Dialogue, &mut Visibility)>,
 ) {
     let mut delta = time.delta_secs().adjust_precision();
     loop {
@@ -266,8 +268,11 @@ fn process_script_events(
                     }
                 }
                 ScriptEvent::Dialogue(speaker, spokage) => {
-                    dbg!(speaker);
-                    dbg!(spokage);
+                    let (mut dialogue, mut visibility) = dialogue.into_inner();
+                    dialogue.speaker = speaker.to_string();
+                    dialogue.spokage = spokage.to_string();
+                    *visibility = Visibility::Inherited;
+                    break;
                 }
                 ScriptEvent::EndTheGame => {
                     next_menu.set(Menu::Credits);
@@ -276,4 +281,118 @@ fn process_script_events(
             script_events.queue.remove(0); // Don't increment i — we just removed this item
         }
     }
+}
+
+fn progress_dialogue(
+    keyboard_input: Res<ButtonInput<KeyCode>>,
+    mut script_events: ResMut<ScriptEventQueue>,
+    mut dialogue: Single<&mut Visibility, With<Dialogue>>,
+) {
+    if keyboard_input.just_pressed(KeyCode::Enter) {
+        if !matches!(
+            script_events.queue.get(0),
+            Some(ScriptEvent::Dialogue(_, _))
+        ) {
+            // not a dialogue!
+            return;
+        }
+        script_events.queue.remove(0); // Don't increment i — we just removed this item
+        if !matches!(
+            script_events.queue.get(0),
+            Some(ScriptEvent::Dialogue(_, _))
+        ) {
+            **dialogue = Visibility::Hidden;
+        }
+    }
+}
+
+#[derive(Component)]
+pub struct Dialogue {
+    speaker: String,
+    spokage: String,
+}
+
+impl Dialogue {
+    fn new(speaker: String, spokage: String) -> Self {
+        Dialogue { speaker, spokage }
+    }
+}
+
+fn update_dialogue_text(dialogue: Single<&Dialogue>, text: Query<(&Name, &mut Text)>) {
+    let Dialogue { speaker, spokage } = dialogue.into_inner();
+
+    for (name, mut text) in text {
+        match name.as_str() {
+            "Speaker" => *text = Text(speaker.clone()),
+            "Spokage" => *text = Text(spokage.clone()),
+            _ => continue,
+        }
+    }
+}
+
+pub fn dialogue(dialogue_assets: &LevelAssets, title_assets: &TitleAssets) -> impl Bundle {
+    (
+        Name::new("Dialogue"),
+        Visibility::Hidden,
+        Dialogue::new(String::new(), String::new()),
+        Node {
+            position_type: PositionType::Absolute,
+            width: Percent(100.0),
+            height: Percent(140.0),
+            align_items: AlignItems::Center,
+            justify_content: JustifyContent::Center,
+            flex_direction: FlexDirection::Column,
+            row_gap: Px(20.0),
+            ..default()
+        },
+        Pickable::IGNORE,
+        children![
+            (
+                Name::new("Frame"),
+                ImageNode::new(dialogue_assets.dialogue.clone()).with_flip_y(),
+                Node {
+                    width: Val::Px(800.),
+                    height: Val::Px(800.),
+                    position_type: PositionType::Absolute,
+                    margin: UiRect::top(Val::Px(-190.)),
+                    ..default()
+                },
+            ),
+            (
+                Name::new("Speaker"),
+                Text("".into()),
+                TextFont {
+                    font_size: 30.0,
+                    font: title_assets.crimson.clone(),
+                    ..default()
+                },
+                TextColor(Color::WHITE),
+                Pickable::IGNORE,
+                Node {
+                    position_type: PositionType::Absolute,
+                    margin: UiRect::top(Val::Px(-390.)),
+                    ..default()
+                },
+            ),
+            (
+                Name::new("Spokage"),
+                Text("".into()),
+                TextFont {
+                    font_size: 23.0,
+                    font: title_assets.crimson.clone(),
+                    ..default()
+                },
+                TextLayout::new_with_justify(JustifyText::Center),
+                TextColor(Color::WHITE),
+                Pickable::IGNORE,
+                Node {
+                    position_type: PositionType::Absolute,
+                    margin: UiRect::top(Val::Px(-730.))
+                        .with_left(Val::Px(300.))
+                        .with_right(Val::Px(300.)),
+                    ..default()
+                },
+            )
+        ],
+    )
 }

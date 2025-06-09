@@ -48,7 +48,7 @@ fn spawn_settings_menu(mut commands: Commands, title_assets: Res<TitleAssets>) {
             children![widget::text("[Ali, young and often overlooked by his family of skilled magicians, has always felt like an outsider. While they hone their craft and perfect their magic, he longs for something more power. Power that will earn their respect and prove he's more than just a boy. He's heard rumors of a hidden room deep within the estate, a forgotten chamber holding the family's most guarded secrets.]", &title_assets),
 
             ]),
-            widget::text("Press X to continue", &title_assets),
+            widget::text("Press Enter to continue", &title_assets),
         ],
     ));
 }
@@ -78,7 +78,7 @@ fn run_story(
         3 => Some(widget::text("[And then...darkness.]", &title_assets)),
         _ => None,
     };
-    if keyboard_input.just_pressed(KeyCode::KeyX) {
+    if keyboard_input.just_pressed(KeyCode::Enter) {
         if let Some(widget) = next {
             let child = commands.spawn(widget).id();
             commands.entity(entity).add_child(child);
@@ -88,7 +88,7 @@ fn run_story(
                 commands.entity(entity).despawn_related::<Children>();
                 let child = commands
                     .spawn(widget::text(
-                        "Press Z to Jump. Press X to Attack. Press C to Dash.",
+                        "Press Z to Jump. Press or hold X to Attack. Press C to Dash.",
                         &title_assets,
                     ))
                     .id();
