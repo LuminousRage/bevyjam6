@@ -71,7 +71,7 @@ pub fn the_eye(
 
     (
         Visibility::default(),
-        Collider::circle(280.0),
+        Collider::capsule(150.0, 300.0),
         RigidBody::Kinematic,
         Transform::from_scale(scale.extend(1.0)).with_translation(translation),
         children![

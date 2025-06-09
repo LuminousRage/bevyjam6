@@ -3,7 +3,7 @@ use crate::{
     asset_tracking::LoadResource,
     collision_layers::enemy_hurt_boxes,
     enemy::eye::{EyeAssets, Pupil, RayWhite, the_eye},
-    health::{health_bar, hurtbox_prefab},
+    health::hurtbox_prefab,
     player::character::Player,
 };
 use avian2d::{math::*, prelude::*};
@@ -16,14 +16,7 @@ use rand::Rng;
 use statrs::distribution::{ContinuousCDF, Normal};
 
 use crate::enemy::configs::*;
-use crate::{
-    enemy::configs::*,
-    health::Health,
-    physics::{
-        configs::GRAVITY_ACCELERATION,
-        creature::{CreaturePhysicsBundle, Grounded},
-    },
-};
+use crate::health::Health;
 
 pub(super) fn plugin(app: &mut App) {
     app.register_type::<LazerAssets>();
@@ -59,6 +52,8 @@ pub fn boss(
 pub struct LazerAssets {
     #[dependency]
     img: Handle<Image>,
+    #[dependency]
+    glint: Handle<Image>,
 }
 
 impl FromWorld for LazerAssets {
@@ -66,6 +61,7 @@ impl FromWorld for LazerAssets {
         let assets = world.resource::<AssetServer>();
         Self {
             img: assets.load("images/LASER_BEAM.png"),
+            glint: assets.load("images/GLINT.png"),
         }
     }
 }
@@ -75,8 +71,19 @@ pub fn lazer(
     direction: Vec3,
     time_remaining: f32,
     scale: Vec3,
+    with_glint: bool,
 ) -> impl Bundle {
     let size = Vec2::new(6035.0 / 10., 477.0 / 10.);
+    let visibility = if with_glint {
+        Visibility::Inherited
+    } else {
+        Visibility::Hidden
+    };
+    let glint = (
+        Name::new("Glint"),
+        Sprite::from_image(lazer_assets.glint.clone()),
+        visibility,
+    );
     (
         Name::new("Lazer"),
         Sprite {
@@ -96,9 +103,9 @@ pub fn lazer(
             enemy_hurt_boxes(),
             0.05,
             Transform::from_translation(Vec3::new(-(5820. / 6035. - 0.5) * 0.95 * size.x, 0., 0.)),
-        )],
+        ),],
         Lazer { time_remaining },
-    )
+    );
 }
 
 #[derive(Component)]
@@ -187,6 +194,7 @@ fn enemy_decision_making(
                 Vec3::new(0.0, 1.0, 0.0),
                 boss.sky_lazer_remaining_duration,
                 RAINING_LASER_SCALE,
+                false,
             ));
         }
         //spawn lazers
@@ -203,6 +211,7 @@ fn enemy_decision_making(
                         Vec3::new(0.0, -1.0, 0.0),
                         SKY_LAZER_DURATION,
                         RAINING_LASER_SCALE,
+                        false,
                     ),
                     Collider::capsule(1., 1.),
                     CollisionLayers::new(0b00010, 0b00000),
@@ -244,6 +253,7 @@ fn enemy_decision_making(
             target.translation - pupil.translation(),
             BEAM_LAZER_DURATION,
             BEAM_LASER_SCALE,
+            true,
         ));
         // commands.spawn(lazer());
         return;
