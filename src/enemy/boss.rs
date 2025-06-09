@@ -82,6 +82,10 @@ pub fn lazer(
     let glint = (
         Name::new("Glint"),
         Sprite::from_image(lazer_assets.glint.clone()),
+        Transform::default()
+            .with_translation(-translation)
+            .with_rotation(Quat::from_rotation_z(direction.angle_between(-Vec3::AXES[0])).inverse())
+            .with_scale(-scale),
         visibility,
     );
     (
@@ -105,7 +109,7 @@ pub fn lazer(
             Transform::from_translation(Vec3::new(-(5820. / 6035. - 0.5) * 0.95 * size.x, 0., 0.)),
         ),],
         Lazer { time_remaining },
-    );
+    )
 }
 
 #[derive(Component)]
