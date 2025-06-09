@@ -169,7 +169,7 @@ impl BossController {
             time_since_last_reposition_ended: 0.0,
             sky_lazer_remaining_duration: 0.0,
             beam_lazer_remaining_duration: 0.0,
-            repositioning_to_left: false,
+            repositioning_to_left: true,
         }
     }
 }
@@ -199,8 +199,8 @@ fn enemy_decision_making(
         } else {
             -boss.time_since_last_reposition_ended.min(0.)
         };
-        let a: f32 = sqrt(2.) * (POSITION_2_X - POSITION_1.x);
-        let b: f32 = (2. / (2. + sqrt(2.))) * (MAX_REPOSITIONING_Y - POSITION_1.y);
+        let a: f32 = sqrt(2.) * (POSITION_2_X - POSITION_1.x) / 2.;
+        let b: f32 = (MAX_REPOSITIONING_Y - POSITION_1.y) / (1. + 1. / sqrt(2.0));
         let x_trans: f32 = (POSITION_2_X + POSITION_1.x) / 2.;
         let y_trans: f32 = MAX_REPOSITIONING_Y - b;
         let lerp = std::f32::consts::PI / 4.
@@ -260,7 +260,7 @@ fn enemy_decision_making(
     //good time for a reposition attack?
     if boss.time_until_next_attack <= 0.0
         && relative_coords.length_squared() <= 600_f32.powf(2.)
-        && roll.powf(1.5 / delta_time)
+        && roll.powf(1.0 / delta_time)
             > 1. - 1.0 / (1. + exp(-0.7 * (boss.time_since_last_reposition_ended - 15.0)))
     {
         // dbg!(roll);

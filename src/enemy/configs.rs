@@ -1,15 +1,15 @@
 use avian2d::math::Scalar;
 use bevy::math::Vec2;
 
-pub const JUMP_IMPULSE: f32 = 650.0;
+pub const JUMP_IMPULSE: f32 = 1100.0;
 pub const MOVEMENT_DAMPING: f32 = 0.0;
 pub const MAX_SLOPE_ANGLE: f32 = (30.0 as Scalar).to_radians();
 pub const BOSS_HEALTH: f32 = 5000.0;
 pub const BOSS_TIME_BETWEEN_ATTACKS: f32 = 3.0;
 pub const TIME_TO_REPOSITION: f32 = 3.5;
-pub const POSITION_1: Vec2 = Vec2::new(-200., 100.);
+pub const POSITION_1: Vec2 = Vec2::new(-1050.0, 175.0);
 pub const POSITION_2_X: f32 = -POSITION_1.x;
-pub const MAX_REPOSITIONING_Y: f32 = 400.0;
+pub const MAX_REPOSITIONING_Y: f32 = 800.0;
 pub const SKY_LAZER_DURATION: f32 = 2.;
 pub const SKY_LAZER_SPAWN_FREQUENCY: f32 = 0.3;
 pub const SKY_ATTACK_DURATION: f32 = 5.0;

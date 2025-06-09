@@ -3,6 +3,7 @@ use bevy::{
     math::ops::{abs, sqrt},
     prelude::*,
 };
+use rand::Rng;
 
 use crate::{
     PausableSystems,
@@ -106,10 +107,11 @@ pub struct SlimeController {
 }
 impl SlimeController {
     fn new(max_x_velocity: f32, jump_attack_full_cooldown: f32) -> Self {
+        let roll: f32 = rand::thread_rng().gen_range(0.75..(jump_attack_full_cooldown / 2.));
         Self {
             max_x_velocity,
             jump_attack_full_cooldown,
-            jump_attack_cooldown: 0.0,
+            jump_attack_cooldown: roll,
             expected_time_until_jump_hits: 0.0,
         }
     }
